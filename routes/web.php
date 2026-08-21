@@ -40,8 +40,16 @@ Route::patch('/pendientes/{despacho}/recibir', [DespachoController::class, 'reci
 // TIENDA
 // =====================================================
 
-Route::get('/tienda', [TiendaController::class, 'index'])
-    ->name('tienda.index');
+
+Route::prefix('tienda')->group(function () {
+
+    Route::get('/', [TiendaController::class, 'index'])
+        ->name('tienda.index');
+
+    Route::get('/inventario', [TiendaController::class, 'inventario'])
+        ->name('tienda.inventario');
+
+});
 
 Route::get('/tienda/recibir', [TiendaController::class, 'recibir'])
     ->name('tienda.recibir');
@@ -61,5 +69,8 @@ Route::get('/tienda/caja', [TiendaController::class, 'caja'])
 Route::get('/tienda/cierres', [TiendaController::class, 'cierres'])
     ->name('tienda.cierres');
 
-Route::get('/tienda/recibir', [TiendaController::class, 'recibir'])
+    Route::get('/tienda/recibir-productos', [TiendaController::class, 'recibirProductos'])
     ->name('tienda.recibir');
+
+Route::patch('/tienda/recibir-productos/{despacho}', [TiendaController::class, 'confirmarRecepcion'])
+    ->name('tienda.recibir.confirmar');

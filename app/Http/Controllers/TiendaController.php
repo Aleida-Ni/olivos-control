@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use App\Models\Producto;
+use App\Models\Despacho;
 class TiendaController extends Controller
 {
     /**
@@ -14,10 +15,6 @@ class TiendaController extends Controller
         config([
             'adminlte.menu' => [
 
-                // =========================
-                // PRINCIPAL
-                // =========================
-
                 [
                     'text' => 'Inicio',
                     'route' => 'tienda.index',
@@ -25,27 +22,22 @@ class TiendaController extends Controller
                 ],
 
                 [
-                    'text' => 'Recibir Productos',
-                    'url' => '#',
-                    'icon' => 'fas fa-fw fa-box-open',
-                ],
+    'text' => 'Recibir Productos',
+    'route' => 'tienda.recibir',
+    'icon' => 'fas fa-fw fa-box-open',
+],
 
                 [
                     'text' => 'Inventario',
-                    'url' => '#',
+                    'route' => 'tienda.inventario',
                     'icon' => 'fas fa-fw fa-boxes',
                 ],
 
                 [
                     'text' => 'Historial',
-                    'url' => '#',
+                    'route' => 'tienda.historial',
                     'icon' => 'fas fa-fw fa-clipboard-list',
                 ],
-
-
-                // =========================
-                // TIENDA
-                // =========================
 
                 [
                     'header' => 'TIENDA',
@@ -53,19 +45,19 @@ class TiendaController extends Controller
 
                 [
                     'text' => 'Ventas',
-                    'url' => '#',
+                    'route' => 'tienda.ventas',
                     'icon' => 'fas fa-fw fa-shopping-cart',
                 ],
 
                 [
                     'text' => 'Caja',
-                    'url' => '#',
+                    'route' => 'tienda.caja',
                     'icon' => 'fas fa-fw fa-cash-register',
                 ],
 
                 [
                     'text' => 'Cierres',
-                    'url' => '#',
+                    'route' => 'tienda.cierres',
                     'icon' => 'fas fa-fw fa-file-invoice-dollar',
                 ],
 
@@ -74,19 +66,115 @@ class TiendaController extends Controller
     }
 
 
-    /**
-     * Inicio de tienda.
-     */
     public function index()
     {
         $this->menuTienda();
 
         return view('tienda.index');
     }
-        public function recibir()
+
+
+public function inventario()
+{
+    $this->menuTienda();
+
+    $productos = Producto::where('activo', true)
+        ->with([
+            'categoria',
+            'inventario'
+        ])
+        ->orderBy('nombre')
+        ->get();
+
+    return view(
+        'tienda.inventario',
+        compact('productos')
+    );
+}
+
+public function recibir()
+{
+    $this->menuTienda();
+
+    $despachos = \App\Models\Despacho::with([
+        'chofer',
+        'detalles.producto'
+    ])
+    ->where('estado', 'ENVIADO')
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+    return view('tienda.recibir', compact('despachos'));
+}
+
+    public function historial()
     {
         $this->menuTienda();
 
-        return view('tienda.recibir');
+        return view('tienda.historial');
     }
+
+
+    public function ventas()
+    {
+        $this->menuTienda();
+
+        return view('tienda.ventas');
+    }
+
+
+    public function caja()
+    {
+        $this->menuTienda();
+
+        return view('tienda.caja');
+    }
+
+
+    public function cierres()
+    {
+        $this->menuTienda();
+
+        return view('tienda.cierres');
+    }
+
+    /**
+ * Mostrar productos pendientes de recibir.
+ */
+public function recibirProductos()
+{
+    $this->menuTienda();
+
+    $despachos = Despacho::with([
+        'chofer',
+        'detalles.producto'
+    ])
+    ->where('estado', 'ENVIADO')
+    ->orderBy('created_at', 'desc')
+    ->get();
+
+    return view(
+        'tienda.recibir',
+        compact('despachos')
+    );
+}
+
+
+/**
+ * Confirmar recepción de un despacho.
+ */
+public function confirmarRecepcion(Despacho $despacho)
+{
+    $despacho->update([
+        'estado' => 'RECIBIDO',
+        'confirmado_en' => now(),
+    ]);
+
+    return redirect()
+        ->route('tienda.recibir')
+        ->with(
+            'success',
+            'Productos recibidos correctamente.'
+        );
+}
 }
