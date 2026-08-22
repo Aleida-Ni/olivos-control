@@ -93,7 +93,7 @@
 
                     <select
                         class="form-control form-control-sm"
-                        id="chofer_id"
+                        id="chofer_id_barra"
                     >
 
                         <option value="">

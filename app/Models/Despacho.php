@@ -13,13 +13,24 @@ class Despacho extends Model
         'fecha',
         'estado',
         'observacion',
-        'confirmado_en'
+        'confirmado_en',
     ];
+
+
+    protected $casts = [
+
+        'fecha' => 'date',
+
+        'confirmado_en' => 'datetime',
+
+    ];
+
 
     public function chofer(): BelongsTo
     {
         return $this->belongsTo(Chofer::class);
     }
+
 
     public function detalles(): HasMany
     {

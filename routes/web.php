@@ -27,50 +27,86 @@ Route::resource('productos', ProductoController::class);
 // DESPACHOS
 // =====================================================
 
-Route::resource('despachos', DespachoController::class);
+Route::resource('despachos', DespachoController::class)
+    ->only([
+        'index',
+        'create',
+        'store'
+    ]);
 
-Route::get('/pendientes', [DespachoController::class, 'pendientes'])
-    ->name('pendientes');
 
-Route::patch('/pendientes/{despacho}/recibir', [DespachoController::class, 'recibir'])
-    ->name('pendientes.recibir');
+// PENDIENTES
 
+Route::get(
+    '/despachos/pendientes',
+    [DespachoController::class, 'pendientes']
+)
+    ->name('despachos.pendientes');
+
+
+// RECIBIDOS
+
+Route::get(
+    '/despachos/recibidos',
+    [DespachoController::class, 'recibidos']
+)
+    ->name('despachos.recibidos');
+
+
+// CONFIRMAR RECEPCIÓN
+
+Route::patch(
+    '/despachos/{despacho}/recibir',
+    [DespachoController::class, 'recibir']
+)
+    ->name('despachos.recibir');
 
 // =====================================================
 // TIENDA
 // =====================================================
 
-
 Route::prefix('tienda')->group(function () {
 
+    // INICIO
     Route::get('/', [TiendaController::class, 'index'])
         ->name('tienda.index');
 
+
+    // RECIBIR PRODUCTOS
+    Route::get('/recibir', [TiendaController::class, 'recibir'])
+        ->name('tienda.recibir');
+
+
+    // CONFIRMAR RECEPCIÓN
+    Route::patch(
+        '/recibir/{despacho}',
+        [TiendaController::class, 'confirmarRecepcion']
+    )
+        ->name('tienda.recibir.confirmar');
+
+
+    // INVENTARIO
     Route::get('/inventario', [TiendaController::class, 'inventario'])
         ->name('tienda.inventario');
 
+
+    // HISTORIAL
+    Route::get('/historial', [TiendaController::class, 'historial'])
+        ->name('tienda.historial');
+
+
+    // VENTAS
+    Route::get('/ventas', [TiendaController::class, 'ventas'])
+        ->name('tienda.ventas');
+
+
+    // CAJA
+    Route::get('/caja', [TiendaController::class, 'caja'])
+        ->name('tienda.caja');
+
+
+    // CIERRES
+    Route::get('/cierres', [TiendaController::class, 'cierres'])
+        ->name('tienda.cierres');
+
 });
-
-Route::get('/tienda/recibir', [TiendaController::class, 'recibir'])
-    ->name('tienda.recibir');
-
-Route::get('/tienda/inventario', [TiendaController::class, 'inventario'])
-    ->name('tienda.inventario');
-
-Route::get('/tienda/historial', [TiendaController::class, 'historial'])
-    ->name('tienda.historial');
-
-Route::get('/tienda/ventas', [TiendaController::class, 'ventas'])
-    ->name('tienda.ventas');
-
-Route::get('/tienda/caja', [TiendaController::class, 'caja'])
-    ->name('tienda.caja');
-
-Route::get('/tienda/cierres', [TiendaController::class, 'cierres'])
-    ->name('tienda.cierres');
-
-    Route::get('/tienda/recibir-productos', [TiendaController::class, 'recibirProductos'])
-    ->name('tienda.recibir');
-
-Route::patch('/tienda/recibir-productos/{despacho}', [TiendaController::class, 'confirmarRecepcion'])
-    ->name('tienda.recibir.confirmar');

@@ -19,11 +19,8 @@
     @if(session('success'))
 
         <div class="alert alert-success">
-
             <i class="fas fa-check-circle"></i>
-
             {{ session('success') }}
-
         </div>
 
     @endif
@@ -31,9 +28,21 @@
 
     @if($despachos->count() > 0)
 
+        <div class="alert alert-warning">
+
+            <i class="fas fa-exclamation-circle"></i>
+
+            <strong>
+                Hay {{ $despachos->count() }} despacho(s)
+                pendiente(s) de recepción.
+            </strong>
+
+        </div>
+
+
         @foreach($despachos as $despacho)
 
-            <div class="card card-warning">
+            <div class="card card-warning mb-4">
 
                 <div class="card-header">
 
@@ -52,7 +61,7 @@
 
                     <div class="row mb-3">
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
 
                             <strong>Chofer:</strong>
 
@@ -60,25 +69,11 @@
 
                         </div>
 
-
-                        <div class="col-md-4">
+                        <div class="col-md-6">
 
                             <strong>Fecha:</strong>
 
                             {{ $despacho->fecha }}
-
-                        </div>
-
-
-                        <div class="col-md-4">
-
-                            <strong>Estado:</strong>
-
-                            <span class="badge badge-warning">
-
-                                PENDIENTE
-
-                            </span>
 
                         </div>
 
@@ -92,67 +87,50 @@
 
                         <i class="fas fa-boxes"></i>
 
-                        Productos enviados
+                        Productos recibidos
 
                     </h5>
 
 
-                    <div class="table-responsive">
+                    <div class="row">
 
-                        <table class="table table-bordered">
+                        @foreach($despacho->detalles as $detalle)
 
-                            <thead>
+                            <div class="col-md-4 mb-3">
 
-                                <tr>
+                                <div class="card shadow-sm">
 
-                                    <th>Producto</th>
+                                    <div class="card-body text-center">
 
-                                    <th width="150">
-                                        Cantidad
-                                    </th>
+                                        <i class="fas fa-box fa-2x mb-2"></i>
 
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody>
-
-                                @foreach($despacho->detalles as $detalle)
-
-                                    <tr>
-
-                                        <td>
+                                        <h5>
 
                                             {{ $detalle->producto->nombre ?? 'Producto' }}
 
-                                        </td>
+                                        </h5>
 
+                                        <span class="badge badge-primary">
 
-                                        <td class="text-center">
+                                            Cantidad:
+                                            {{ $detalle->cantidad }}
 
-                                            <strong>
+                                        </span>
 
-                                                {{ $detalle->cantidad }}
+                                    </div>
 
-                                            </strong>
+                                </div>
 
-                                        </td>
+                            </div>
 
-                                    </tr>
-
-                                @endforeach
-
-                            </tbody>
-
-                        </table>
+                        @endforeach
 
                     </div>
 
                 </div>
 
 
-                <div class="card-footer text-right">
+                <div class="card-footer">
 
                     <form
                         action="{{ route('tienda.recibir.confirmar', $despacho) }}"
@@ -163,16 +141,15 @@
 
                         @method('PATCH')
 
-
                         <button
                             type="submit"
-                            class="btn btn-success btn-lg"
-                            onclick="return confirm('¿Confirmar que estos productos llegaron a la tienda?')"
+                            class="btn btn-success btn-lg btn-block"
+                            onclick="return confirm('¿Confirmar que estos productos fueron recibidos en tienda?')"
                         >
 
-                            <i class="fas fa-check"></i>
+                            <i class="fas fa-check-circle"></i>
 
-                            RECIBIR PRODUCTOS
+                            CONFIRMAR RECEPCIÓN
 
                         </button>
 
@@ -193,17 +170,13 @@
 
                 <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
 
-
                 <h3>
-
                     No hay productos pendientes
-
                 </h3>
-
 
                 <p class="text-muted">
 
-                    Los despachos enviados aparecerán aquí.
+                    No hay despachos enviados pendientes de recepción.
 
                 </p>
 

@@ -7,26 +7,51 @@ use App\Models\Chofer;
 use App\Models\Producto;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DespachoController extends Controller
 {
     /**
-     * Menú del área de despacho.
+     * Lista principal de despachos.
      */
-    private function menuDespacho()
+    public function index()
+    {
+        $choferes = Chofer::where('activo', true)
+            ->orderBy('nombre')
+            ->get();
+
+        $productos = Producto::where('activo', true)
+            ->with('categoria')
+            ->orderBy('nombre')
+            ->get();
+
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+
+        return view('despachos.index', compact(
+            'choferes',
+            'productos',
+            'pendientes'
+        ));
+    }
+
+
+    /**
+     * Menú exclusivo de despacho.
+     */
+    private function menuDespacho($pendientes = 0)
     {
         config([
             'adminlte.menu' => [
 
                 [
                     'text' => 'Inicio',
-                    'route' => 'dashboard',
+                    'route' => 'despachos.index',
                     'icon' => 'fas fa-fw fa-home',
                 ],
 
                 [
                     'text' => 'Despachar',
-                    'route' => 'despachos.index',
+                    'route' => 'despachos.create',
                     'icon' => 'fas fa-fw fa-truck',
                 ],
 
@@ -37,20 +62,32 @@ class DespachoController extends Controller
                 ],
 
                 [
-                    'text' => 'Historial',
-                    'url' => '#',
-                    'icon' => 'fas fa-fw fa-clipboard-list',
-                ],
+    'text' => 'Historial',
+    'url' => '#',
+    'icon' => 'fas fa-fw fa-history',
 
-                [
-                    'header' => 'ADMINISTRACIÓN',
-                ],
+    'submenu' => [
 
-                [
-                    'text' => 'Productos',
-                    'route' => 'productos.index',
-                    'icon' => 'fas fa-fw fa-shopping-bag',
-                ],
+        [
+            'text' => 'Pendientes',
+            'route' => 'despachos.pendientes',
+            'icon' => 'fas fa-fw fa-clock',
+
+            'label' => $pendientes > 0
+                ? $pendientes
+                : null,
+
+            'label_color' => 'danger',
+        ],
+
+        [
+            'text' => 'Recibidos',
+            'route' => 'despachos.recibidos',
+            'icon' => 'fas fa-fw fa-check-circle',
+        ],
+
+    ],
+],
 
             ],
         ]);
@@ -58,35 +95,10 @@ class DespachoController extends Controller
 
 
     /**
-     * Mostrar despachos.
-     */
-    public function index()
-    {
-        $this->menuDespacho();
-
-        $choferes = Chofer::where('activo', true)
-            ->orderBy('nombre')
-            ->get();
-
-        $productos = Producto::where('activo', true)
-            ->with('categoria')
-            ->orderBy('nombre')
-            ->get();
-
-        return view('despachos.index', compact(
-            'choferes',
-            'productos'
-        ));
-    }
-
-
-    /**
-     * Crear despacho.
+     * Formulario para crear despacho.
      */
     public function create()
     {
-        $this->menuDespacho();
-
         $choferes = Chofer::where('activo', true)
             ->orderBy('nombre')
             ->get();
@@ -95,6 +107,8 @@ class DespachoController extends Controller
             ->with('categoria')
             ->orderBy('nombre')
             ->get();
+
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
         return view('despachos.create', compact(
             'choferes',
@@ -110,9 +124,16 @@ class DespachoController extends Controller
     {
         $request->validate([
             'chofer_id' => 'required|exists:choferes,id',
+
             'productos' => 'nullable|array',
+
+            'productos.*' => 'integer|min:1',
+
             'pedidos' => 'nullable|array',
+
+            'observacion' => 'nullable|string|max:1000',
         ]);
+
 
         if (
             empty($request->productos) &&
@@ -120,63 +141,119 @@ class DespachoController extends Controller
         ) {
             return back()
                 ->withErrors([
-                    'productos' => 'Debes agregar al menos un producto o pedido.'
+                    'productos' =>
+                        'Debes agregar al menos un producto o un pedido.'
                 ])
                 ->withInput();
         }
 
-        $despacho = Despacho::create([
-            'chofer_id' => $request->chofer_id,
-            'fecha' => now()->toDateString(),
-            'estado' => 'ENVIADO',
-            'observacion' => $request->observacion,
-        ]);
 
-        // PRODUCTOS NORMALES
-        if ($request->productos) {
+        try {
 
-            foreach ($request->productos as $productoId => $cantidad) {
+            DB::transaction(function () use ($request) {
 
-                if ($cantidad > 0) {
+                /*
+                 * CREAR CABECERA DEL DESPACHO
+                 */
+                $despacho = Despacho::create([
 
-                    $despacho->detalles()->create([
-                        'producto_id' => $productoId,
-                        'cantidad' => $cantidad,
-                        'es_pedido' => false,
-                        'numero_pedido' => null,
-                        'cliente' => null,
-                    ]);
+                    'chofer_id' => $request->chofer_id,
+
+                    'fecha' => now()->toDateString(),
+
+                    'estado' => 'ENVIADO',
+
+                    'observacion' => $request->observacion,
+
+                ]);
+
+
+                /*
+                 * PRODUCTOS NORMALES
+                 */
+                if ($request->filled('productos')) {
+
+                    foreach ($request->productos as $productoId => $cantidad) {
+
+                        if ((int) $cantidad <= 0) {
+                            continue;
+                        }
+
+                        $producto = Producto::findOrFail($productoId);
+
+                        $despacho->detalles()->create([
+
+                            'producto_id' => $producto->id,
+
+                            'cantidad' => $cantidad,
+
+                            'es_pedido' => false,
+
+                            'numero_pedido' => null,
+
+                            'cliente' => null,
+
+                        ]);
+                    }
                 }
-            }
+
+
+                /*
+                 * PEDIDOS
+                 */
+                if ($request->filled('pedidos')) {
+
+                    foreach ($request->pedidos as $pedido) {
+
+                        if (
+                            empty($pedido['producto_id']) ||
+                            empty($pedido['cantidad'])
+                        ) {
+                            continue;
+                        }
+
+                        $producto = Producto::findOrFail(
+                            $pedido['producto_id']
+                        );
+
+                        $despacho->detalles()->create([
+
+                            'producto_id' => $producto->id,
+
+                            'cantidad' => $pedido['cantidad'],
+
+                            'es_pedido' => true,
+
+                            'numero_pedido' =>
+                                $pedido['numero_pedido'] ?? null,
+
+                            'cliente' =>
+                                $pedido['cliente'] ?? null,
+
+                        ]);
+                    }
+                }
+
+            });
+
+        } catch (\Exception $e) {
+
+            return back()
+                ->withErrors([
+                    'error' =>
+                        'No se pudo guardar el despacho: ' .
+                        $e->getMessage()
+                ])
+                ->withInput();
         }
 
-        // PEDIDOS
-        if ($request->pedidos) {
 
-            foreach ($request->pedidos as $pedido) {
-
-                if (
-                    !empty($pedido['producto_id']) &&
-                    !empty($pedido['cantidad'])
-                ) {
-
-                    $despacho->detalles()->create([
-                        'producto_id' => $pedido['producto_id'],
-                        'cantidad' => $pedido['cantidad'],
-                        'es_pedido' => true,
-                        'numero_pedido' => $pedido['numero_pedido'] ?? null,
-                        'cliente' => $pedido['cliente'] ?? null,
-                    ]);
-                }
-            }
-        }
-
-        return redirect()
-            ->route('pendientes')
-            ->with(
-                'success',
-                'Despacho enviado correctamente. Ahora está pendiente de recepción.'
-            );
+return redirect()
+    ->route('despachos.pendientes')
+    ->with(
+        'success',
+        'Despacho enviado correctamente. Ahora está pendiente de recepción.'
+    );
     }
 
 
@@ -185,8 +262,6 @@ class DespachoController extends Controller
      */
     public function pendientes()
     {
-        $this->menuDespacho();
-
         $despachos = Despacho::with([
             'chofer',
             'detalles.producto'
@@ -195,7 +270,57 @@ class DespachoController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('pendientes.index', compact('despachos'));
+        $pendientes = $despachos->count();
+
+        return view(
+            'despachos.pendientes',
+            compact('despachos')
+        );
+    }
+
+
+    /**
+     * Historial de despachos recibidos.
+     */
+    public function recibidos(Request $request)
+    {
+        $query = Despacho::with([
+            'chofer',
+            'detalles.producto'
+        ])
+            ->where('estado', 'RECIBIDO');
+
+
+        /*
+         * FILTRO POR FECHA
+         */
+        if ($request->filled('fecha')) {
+
+            $query->whereDate(
+                'confirmado_en',
+                $request->fecha
+            );
+        }
+
+
+        /*
+         * POR DEFECTO MOSTRAR LOS MÁS RECIENTES
+         */
+        $despachos = $query
+            ->orderBy('confirmado_en', 'desc')
+            ->get();
+
+
+        $pendientes = Despacho::where(
+            'estado',
+            'ENVIADO'
+        )->count();
+
+
+        return view(
+            'despachos.recibidos',
+            compact('despachos')
+        );
     }
 
 
@@ -205,15 +330,16 @@ class DespachoController extends Controller
     public function recibir(Despacho $despacho)
     {
         $despacho->update([
+
             'estado' => 'RECIBIDO',
+
             'confirmado_en' => now(),
+
         ]);
 
-        return redirect()
-            ->route('pendientes')
-            ->with(
-                'success',
-                'Despacho recibido correctamente.'
-            );
+
+return redirect()
+    ->route('despachos.pendientes')
+    ->with('success', 'Despacho recibido correctamente.');
     }
 }

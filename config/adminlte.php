@@ -314,7 +314,7 @@ return [
 
 [
     'text' => 'Pendientes',
-    'route' => 'pendientes',
+    'route' => 'despachos.pendientes',
     'icon' => 'fas fa-fw fa-clock',
 ],
     [

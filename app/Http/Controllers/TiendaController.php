@@ -2,18 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Producto;
 use App\Models\Despacho;
+use App\Models\Inventario;
+use App\Models\MovimientoInventario;
+use Illuminate\Support\Facades\DB;
+
 class TiendaController extends Controller
 {
     /**
      * Menú exclusivo de tienda.
      */
-    private function menuTienda()
+    private function menuTienda($pendientes = 0)
     {
         config([
             'adminlte.menu' => [
+
+                // =========================
+                // PRINCIPAL
+                // =========================
 
                 [
                     'text' => 'Inicio',
@@ -22,10 +29,12 @@ class TiendaController extends Controller
                 ],
 
                 [
-    'text' => 'Recibir Productos',
-    'route' => 'tienda.recibir',
-    'icon' => 'fas fa-fw fa-box-open',
-],
+                    'text' => 'Recibir Productos',
+                    'route' => 'tienda.recibir',
+                    'icon' => 'fas fa-fw fa-box-open',
+                    'label' => $pendientes > 0 ? $pendientes : null,
+                    'label_color' => 'danger',
+                ],
 
                 [
                     'text' => 'Inventario',
@@ -38,6 +47,11 @@ class TiendaController extends Controller
                     'route' => 'tienda.historial',
                     'icon' => 'fas fa-fw fa-clipboard-list',
                 ],
+
+
+                // =========================
+                // TIENDA
+                // =========================
 
                 [
                     'header' => 'TIENDA',
@@ -66,115 +80,170 @@ class TiendaController extends Controller
     }
 
 
+    /**
+     * INICIO
+     */
     public function index()
     {
-        $this->menuTienda();
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+
+        $this->menuTienda($pendientes);
 
         return view('tienda.index');
     }
 
 
-public function inventario()
-{
-    $this->menuTienda();
-
-    $productos = Producto::where('activo', true)
-        ->with([
-            'categoria',
-            'inventario'
-        ])
-        ->orderBy('nombre')
-        ->get();
-
-    return view(
-        'tienda.inventario',
-        compact('productos')
-    );
-}
-
-public function recibir()
-{
-    $this->menuTienda();
-
-    $despachos = \App\Models\Despacho::with([
-        'chofer',
-        'detalles.producto'
-    ])
-    ->where('estado', 'ENVIADO')
-    ->orderBy('created_at', 'desc')
-    ->get();
-
-    return view('tienda.recibir', compact('despachos'));
-}
-
-    public function historial()
+    /**
+     * INVENTARIO
+     */
+    public function inventario()
     {
-        $this->menuTienda();
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
-        return view('tienda.historial');
+        $this->menuTienda($pendientes);
+
+        $productos = Producto::where('activo', true)
+            ->with([
+                'categoria',
+                'inventario'
+            ])
+            ->orderBy('nombre')
+            ->get();
+
+        return view(
+            'tienda.inventario',
+            compact('productos')
+        );
     }
 
 
+    /**
+     * RECIBIR PRODUCTOS
+     */
+    public function recibir()
+    {
+        $despachos = Despacho::with([
+            'chofer',
+            'detalles.producto'
+        ])
+        ->where('estado', 'ENVIADO')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        $pendientes = $despachos->count();
+
+        $this->menuTienda($pendientes);
+
+        return view(
+            'tienda.recibir',
+            compact('despachos')
+        );
+    }
+
+
+    /**
+     * CONFIRMAR RECEPCIÓN
+     */
+    public function confirmarRecepcion(Despacho $despacho)
+    {
+        if ($despacho->estado !== 'ENVIADO') {
+            return redirect()
+                ->route('tienda.recibir')
+                ->with('error', 'Este despacho ya fue recibido.');
+        }
+
+        DB::transaction(function () use ($despacho) {
+            $despacho->load('detalles');
+
+            foreach ($despacho->detalles as $detalle) {
+                $inventario = Inventario::firstOrCreate(
+                    ['producto_id' => $detalle->producto_id],
+                    ['stock' => 0]
+                );
+
+                $inventario->increment('stock', $detalle->cantidad);
+
+                MovimientoInventario::create([
+                    'producto_id' => $detalle->producto_id,
+                    'tipo' => 'Ingreso',
+                    'cantidad' => $detalle->cantidad,
+                    'referencia' => 'Despacho #' . $despacho->id,
+                    'observacion' => 'Recepción de productos en tienda.',
+                ]);
+            }
+
+            $despacho->update([
+                'estado' => 'RECIBIDO',
+                'confirmado_en' => now(),
+            ]);
+        });
+
+        return redirect()
+            ->route('tienda.recibir')
+            ->with(
+                'success',
+                'Productos recibidos correctamente.'
+            );
+    }
+
+
+    /**
+     * HISTORIAL
+     */
+    public function historial()
+    {
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+
+        $this->menuTienda($pendientes);
+
+        $despachos = Despacho::with([
+            'chofer',
+            'detalles.producto',
+        ])
+            ->where('estado', 'RECIBIDO')
+            ->whereDate('confirmado_en', today())
+            ->orderByDesc('confirmado_en')
+            ->get();
+
+        return view('tienda.historial', compact('despachos'));
+    }
+
+
+    /**
+     * VENTAS
+     */
     public function ventas()
     {
-        $this->menuTienda();
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+
+        $this->menuTienda($pendientes);
 
         return view('tienda.ventas');
     }
 
 
+    /**
+     * CAJA
+     */
     public function caja()
     {
-        $this->menuTienda();
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+
+        $this->menuTienda($pendientes);
 
         return view('tienda.caja');
     }
 
 
+    /**
+     * CIERRES
+     */
     public function cierres()
     {
-        $this->menuTienda();
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+
+        $this->menuTienda($pendientes);
 
         return view('tienda.cierres');
     }
-
-    /**
- * Mostrar productos pendientes de recibir.
- */
-public function recibirProductos()
-{
-    $this->menuTienda();
-
-    $despachos = Despacho::with([
-        'chofer',
-        'detalles.producto'
-    ])
-    ->where('estado', 'ENVIADO')
-    ->orderBy('created_at', 'desc')
-    ->get();
-
-    return view(
-        'tienda.recibir',
-        compact('despachos')
-    );
-}
-
-
-/**
- * Confirmar recepción de un despacho.
- */
-public function confirmarRecepcion(Despacho $despacho)
-{
-    $despacho->update([
-        'estado' => 'RECIBIDO',
-        'confirmado_en' => now(),
-    ]);
-
-    return redirect()
-        ->route('tienda.recibir')
-        ->with(
-            'success',
-            'Productos recibidos correctamente.'
-        );
-}
 }
