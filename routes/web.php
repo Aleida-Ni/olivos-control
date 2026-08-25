@@ -6,6 +6,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\DespachoController;
 use App\Http\Controllers\TiendaController;
+use App\Http\Controllers\CajeroController;
+use App\Http\Controllers\VentaController;
 
 
 // =====================================================
@@ -35,6 +37,13 @@ Route::resource('despachos', DespachoController::class)
     ]);
 
 
+// INICIO DESPACHO
+Route::get(
+    '/despachos/inicio',
+    [DespachoController::class, 'inicio']
+)->name('despachos.inicio');
+
+
 // PENDIENTES
 
 Route::get(
@@ -52,14 +61,6 @@ Route::get(
 )
     ->name('despachos.recibidos');
 
-
-// CONFIRMAR RECEPCIÓN
-
-Route::patch(
-    '/despachos/{despacho}/recibir',
-    [DespachoController::class, 'recibir']
-)
-    ->name('despachos.recibir');
 
 // =====================================================
 // TIENDA
@@ -96,17 +97,46 @@ Route::prefix('tienda')->group(function () {
 
 
     // VENTAS
-    Route::get('/ventas', [TiendaController::class, 'ventas'])
+    Route::get('/ventas', [VentaController::class, 'index'])
         ->name('tienda.ventas');
 
+    Route::get('/ventas/realizadas', [VentaController::class, 'realizadas'])
+        ->name('tienda.ventas.realizadas');
+
+    Route::get('/pedidos', [TiendaController::class, 'pedidos'])
+        ->name('tienda.pedidos');
+
+    Route::post('/pedidos/{detalleDespacho}/cobrar', [TiendaController::class, 'cobrarPedido'])
+        ->name('tienda.pedidos.cobrar');
+
+    Route::post('/pedidos/{detalleDespacho}/recibir-inventario', [TiendaController::class, 'recibirPedidoInventario'])
+        ->name('tienda.pedidos.recibir-inventario');
+
+    Route::post('/ventas', [VentaController::class, 'store'])
+        ->name('tienda.ventas.store');
 
     // CAJA
     Route::get('/caja', [TiendaController::class, 'caja'])
         ->name('tienda.caja');
 
+    Route::get('/caja/ingresos', [TiendaController::class, 'ingresos'])
+        ->name('tienda.caja.ingresos');
+
+    Route::get('/caja/egresos', [TiendaController::class, 'egresos'])
+        ->name('tienda.caja.egresos');
 
     // CIERRES
     Route::get('/cierres', [TiendaController::class, 'cierres'])
         ->name('tienda.cierres');
+
+    Route::get('/cierres/historial', [TiendaController::class, 'historialCierres'])
+        ->name('tienda.cierres.historial');
+
+    Route::resource('cajeros', CajeroController::class)
+    ->only([
+        'index',
+        'create',
+        'store',
+    ]);
 
 });

@@ -298,53 +298,9 @@ return [
     |
     */
 
-    'menu' => [
-
-    [
-        'text' => 'Inicio',
-        'route' => 'dashboard',
-        'icon' => 'fas fa-fw fa-home',
-    ],
-
-[
-    'text' => 'Despachar',
-    'route' => 'despachos.index',
-    'icon' => 'fas fa-fw fa-truck',
-],
-
-[
-    'text' => 'Pendientes',
-    'route' => 'despachos.pendientes',
-    'icon' => 'fas fa-fw fa-clock',
-],
-    [
-        'text' => 'Inventario',
-        'url' => '#',
-        'icon' => 'fas fa-fw fa-boxes',
-    ],
-
-    [
-        'text' => 'Historial',
-        'url' => '#',
-        'icon' => 'fas fa-fw fa-clipboard-list',
-    ],
-
-    [
-        'header' => 'ADMINISTRACIÓN',
-    ],
-
-    [
-        'text' => 'Productos',
-        'route' => 'productos.index',
-        'icon' => 'fas fa-fw fa-shopping-basket',
-    ],
-    [
-    'text' => 'Tienda',
-    'route' => 'tienda.index',
-    'icon' => 'fas fa-fw fa-store',
-],
-
-],
+    // Los menús de cada módulo se definen dinámicamente en los controladores
+    // para evitar que el sidebar de despacho y tienda se mezclen al navegar.
+    'menu' => [],
     /*
     |--------------------------------------------------------------------------
     | Menu Filters

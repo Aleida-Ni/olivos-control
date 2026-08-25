@@ -40,6 +40,7 @@ class ProductoController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'categoria_id' => 'required|exists:categorias,id',
+            'precio' => 'required|numeric|min:0',
         ]);
 
         $categoria = Categoria::findOrFail($request->categoria_id);
@@ -74,6 +75,7 @@ class ProductoController extends Controller
         Producto::create([
             'codigo' => $codigo,
             'nombre' => $request->nombre,
+            'precio' => $request->precio,
             'categoria_id' => $request->categoria_id,
             'activo' => true,
         ]);
@@ -103,10 +105,12 @@ class ProductoController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'categoria_id' => 'required|exists:categorias,id',
+            'precio' => 'required|numeric|min:0',
         ]);
 
         $producto->update([
             'nombre' => $request->nombre,
+            'precio' => $request->precio,
             'categoria_id' => $request->categoria_id,
         ]);
 

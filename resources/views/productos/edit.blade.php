@@ -74,6 +74,25 @@
 
                     </div>
 
+                    <div class="form-group">
+                        <label for="precio">Precio de venta (Bs)</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend"><span class="input-group-text">Bs</span></div>
+                            <input
+                                type="number"
+                                name="precio"
+                                id="precio"
+                                class="form-control @error('precio') is-invalid @enderror"
+                                value="{{ old('precio', $producto->precio) }}"
+                                min="0"
+                                step="0.01"
+                            >
+                        </div>
+                        @error('precio')
+                            <span class="text-danger small">{{ $message }}</span>
+                        @enderror
+                    </div>
+
 
                     {{-- CATEGORÍA --}}
                     <div class="form-group">

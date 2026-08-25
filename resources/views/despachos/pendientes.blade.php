@@ -106,29 +106,10 @@
 
                     <div class="card-footer">
 
-                        <form
-                            action="{{ route('despachos.recibir', $despacho) }}"
-                            method="POST"
-                        >
-
-                            @csrf
-                            @method('PATCH')
-
-                            <button
-                                type="submit"
-                                class="btn btn-success btn-block"
-                                onclick="return confirm(
-                                    '¿Confirmar que la tienda recibió este despacho?'
-                                )"
-                            >
-
-                                <i class="fas fa-check"></i>
-
-                                Confirmar recibido
-
-                            </button>
-
-                        </form>
+                        <span class="text-muted">
+                            <i class="fas fa-store"></i>
+                            Pendiente de confirmación en tienda
+                        </span>
 
                     </div>
 

@@ -27,10 +27,28 @@ class DespachoController extends Controller
 
         $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
+        $this->menuDespacho($pendientes);
+
         return view('despachos.index', compact(
             'choferes',
             'productos',
             'pendientes'
+        ));
+    }
+
+    /**
+     * Inicio del módulo de despacho.
+     */
+    public function inicio()
+    {
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+        $recibidos = Despacho::where('estado', 'RECIBIDO')->count();
+
+        $this->menuDespacho($pendientes);
+
+        return view('despachos.inicio', compact(
+            'pendientes',
+            'recibidos'
         ));
     }
 
@@ -42,53 +60,53 @@ class DespachoController extends Controller
     {
         config([
             'adminlte.menu' => [
-
                 [
                     'text' => 'Inicio',
-                    'route' => 'despachos.index',
+                    'route' => 'despachos.inicio',
                     'icon' => 'fas fa-fw fa-home',
                 ],
-
                 [
                     'text' => 'Despachar',
                     'route' => 'despachos.create',
                     'icon' => 'fas fa-fw fa-truck',
                 ],
-
+                [
+                    'text' => 'Historial de Despachos',
+                    'url' => '#',
+                    'icon' => 'fas fa-fw fa-history',
+                    'submenu' => [
+                        [
+                            'text' => 'Pendientes',
+                            'route' => 'despachos.pendientes',
+                            'icon' => 'fas fa-fw fa-clock',
+                            'label' => $pendientes > 0 ? $pendientes : null,
+                            'label_color' => 'danger',
+                        ],
+                        [
+                            'text' => 'Recibidos',
+                            'route' => 'despachos.recibidos',
+                            'icon' => 'fas fa-fw fa-check-circle',
+                        ],
+                    ],
+                ],
                 [
                     'text' => 'Inventario',
                     'url' => '#',
                     'icon' => 'fas fa-fw fa-boxes',
                 ],
-
                 [
-    'text' => 'Historial',
-    'url' => '#',
-    'icon' => 'fas fa-fw fa-history',
-
-    'submenu' => [
-
-        [
-            'text' => 'Pendientes',
-            'route' => 'despachos.pendientes',
-            'icon' => 'fas fa-fw fa-clock',
-
-            'label' => $pendientes > 0
-                ? $pendientes
-                : null,
-
-            'label_color' => 'danger',
-        ],
-
-        [
-            'text' => 'Recibidos',
-            'route' => 'despachos.recibidos',
-            'icon' => 'fas fa-fw fa-check-circle',
-        ],
-
-    ],
-],
-
+                    'header' => 'ADMINISTRACIÓN',
+                ],
+                [
+                    'text' => 'Productos',
+                    'route' => 'productos.index',
+                    'icon' => 'fas fa-fw fa-shopping-basket',
+                ],
+                [
+                    'text' => 'Tienda',
+                    'route' => 'tienda.index',
+                    'icon' => 'fas fa-fw fa-store',
+                ],
             ],
         ]);
     }
@@ -110,12 +128,14 @@ class DespachoController extends Controller
 
         $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
-        return view('despachos.create', compact(
+        $this->menuDespacho($pendientes);
+
+        return view('despachos.index', compact(
             'choferes',
-            'productos'
+            'productos',
+            'pendientes'
         ));
     }
-
 
     /**
      * Guardar despacho.
@@ -141,15 +161,12 @@ class DespachoController extends Controller
         ) {
             return back()
                 ->withErrors([
-                    'productos' =>
-                        'Debes agregar al menos un producto o un pedido.'
+                    'productos' => 'Debes agregar al menos un producto o un pedido para enviar a tienda.',
                 ])
                 ->withInput();
         }
 
-
         try {
-
             DB::transaction(function () use ($request) {
 
                 /*
@@ -248,12 +265,12 @@ class DespachoController extends Controller
         }
 
 
-return redirect()
-    ->route('despachos.pendientes')
-    ->with(
-        'success',
-        'Despacho enviado correctamente. Ahora está pendiente de recepción.'
-    );
+        return redirect()
+            ->route('despachos.pendientes')
+            ->with(
+                'success',
+                'Despacho enviado correctamente. Ahora está pendiente de recepción.'
+            );
     }
 
 
@@ -271,6 +288,8 @@ return redirect()
             ->get();
 
         $pendientes = $despachos->count();
+
+        $this->menuDespacho($pendientes);
 
         return view(
             'despachos.pendientes',
@@ -316,6 +335,7 @@ return redirect()
             'ENVIADO'
         )->count();
 
+        $this->menuDespacho($pendientes);
 
         return view(
             'despachos.recibidos',
@@ -324,22 +344,4 @@ return redirect()
     }
 
 
-    /**
-     * Confirmar recepción.
-     */
-    public function recibir(Despacho $despacho)
-    {
-        $despacho->update([
-
-            'estado' => 'RECIBIDO',
-
-            'confirmado_en' => now(),
-
-        ]);
-
-
-return redirect()
-    ->route('despachos.pendientes')
-    ->with('success', 'Despacho recibido correctamente.');
-    }
 }

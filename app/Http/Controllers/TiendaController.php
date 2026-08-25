@@ -13,7 +13,7 @@ class TiendaController extends Controller
     /**
      * Menú exclusivo de tienda.
      */
-    private function menuTienda($pendientes = 0)
+    public function menuTienda($pendientes = 0)
     {
         config([
             'adminlte.menu' => [
@@ -59,20 +59,69 @@ class TiendaController extends Controller
 
                 [
                     'text' => 'Ventas',
-                    'route' => 'tienda.ventas',
                     'icon' => 'fas fa-fw fa-shopping-cart',
+                    'submenu' => [
+                        [
+                            'text' => 'Nueva venta',
+                            'route' => 'tienda.ventas',
+                            'icon' => 'fas fa-fw fa-cart-plus',
+                        ],
+                        [
+                            'text' => 'Pedidos',
+                            'route' => 'tienda.pedidos',
+                            'icon' => 'fas fa-fw fa-clipboard-list',
+                        ],
+                        [
+                            'text' => 'Ventas realizadas',
+                            'route' => 'tienda.ventas.realizadas',
+                            'icon' => 'fas fa-fw fa-receipt',
+                        ],
+                    ],
+                ],
+
+                [
+                    'text' => 'Cajeros',
+                    'route' => 'cajeros.index',
+                    'icon' => 'fas fa-fw fa-users',
                 ],
 
                 [
                     'text' => 'Caja',
-                    'route' => 'tienda.caja',
                     'icon' => 'fas fa-fw fa-cash-register',
+                    'submenu' => [
+                        [
+                            'text' => 'Mi turno',
+                            'route' => 'tienda.caja',
+                            'icon' => 'fas fa-fw fa-user-clock',
+                        ],
+                        [
+                            'text' => 'Ingresos',
+                            'route' => 'tienda.caja.ingresos',
+                            'icon' => 'fas fa-fw fa-arrow-down',
+                        ],
+                        [
+                            'text' => 'Egresos',
+                            'route' => 'tienda.caja.egresos',
+                            'icon' => 'fas fa-fw fa-arrow-up',
+                        ],
+                    ],
                 ],
 
                 [
                     'text' => 'Cierres',
-                    'route' => 'tienda.cierres',
                     'icon' => 'fas fa-fw fa-file-invoice-dollar',
+                    'submenu' => [
+                        [
+                            'text' => 'Cerrar turno',
+                            'route' => 'tienda.cierres',
+                            'icon' => 'fas fa-fw fa-lock',
+                        ],
+                        [
+                            'text' => 'Historial de cierres',
+                            'route' => 'tienda.cierres.historial',
+                            'icon' => 'fas fa-fw fa-history',
+                        ],
+                    ],
                 ],
 
             ],
@@ -179,10 +228,10 @@ class TiendaController extends Controller
         });
 
         return redirect()
-            ->route('tienda.recibir')
+            ->route('tienda.historial')
             ->with(
                 'success',
-                'Productos recibidos correctamente.'
+                'Despacho recibido correctamente. El inventario fue actualizado.'
             );
     }
 
@@ -190,18 +239,23 @@ class TiendaController extends Controller
     /**
      * HISTORIAL
      */
-    public function historial()
+    public function historial(\Illuminate\Http\Request $request)
     {
         $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
         $this->menuTienda($pendientes);
 
-        $despachos = Despacho::with([
+        $query = Despacho::with([
             'chofer',
             'detalles.producto',
         ])
-            ->where('estado', 'RECIBIDO')
-            ->whereDate('confirmado_en', today())
+            ->where('estado', 'RECIBIDO');
+
+        if ($request->filled('fecha')) {
+            $query->whereDate('confirmado_en', $request->fecha);
+        }
+
+        $despachos = $query
             ->orderByDesc('confirmado_en')
             ->get();
 
@@ -221,6 +275,70 @@ class TiendaController extends Controller
         return view('tienda.ventas');
     }
 
+    public function pedidos()
+    {
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+
+        $this->menuTienda($pendientes);
+
+        $detalleDespachos = \App\Models\DetalleDespacho::with(['despacho', 'producto'])
+            ->where('es_pedido', true)
+            ->whereDate('created_at', today())
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('tienda.pedidos', compact('detalleDespachos'));
+    }
+
+    public function cobrarPedido(\App\Models\DetalleDespacho $detalleDespacho, \Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'monto' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $monto = (float) $request->monto;
+        $saldoActual = (float) ($detalleDespacho->saldo ?? 0);
+        $totalPedido = (float) ($detalleDespacho->precio_unitario * $detalleDespacho->cantidad);
+
+        $nuevoMontoPagado = min($monto + (float) ($detalleDespacho->monto_pagado ?? 0), $totalPedido);
+        $saldo = round($totalPedido - $nuevoMontoPagado, 2);
+
+        $detalleDespacho->update([
+            'monto_pagado' => round($nuevoMontoPagado, 2),
+            'saldo' => round($saldo, 2),
+            'estado' => $saldo <= 0 ? 'PAGADO' : 'PARCIAL',
+        ]);
+
+        return redirect()->route('tienda.pedidos')->with('success', 'Cobro registrado correctamente.');
+    }
+
+    public function recibirPedidoInventario(\App\Models\DetalleDespacho $detalleDespacho)
+    {
+        if ($detalleDespacho->producto_id === null) {
+            return back()->with('error', 'No hay producto asociado al pedido.');
+        }
+
+        $inventario = Inventario::firstOrCreate(
+            ['producto_id' => $detalleDespacho->producto_id],
+            ['stock' => 0]
+        );
+
+        $inventario->increment('stock', $detalleDespacho->cantidad);
+
+        MovimientoInventario::create([
+            'producto_id' => $detalleDespacho->producto_id,
+            'tipo' => 'Ingreso',
+            'cantidad' => $detalleDespacho->cantidad,
+            'referencia' => 'Pedido #' . $detalleDespacho->id,
+            'observacion' => 'Pedido recibido en tienda desde despacho.',
+        ]);
+
+        $detalleDespacho->update([
+            'estado' => 'EN_TIENDA',
+        ]);
+
+        return redirect()->route('tienda.pedidos')->with('success', 'Pedido recibido en inventario correctamente.');
+    }
 
     /**
      * CAJA
@@ -234,6 +352,21 @@ class TiendaController extends Controller
         return view('tienda.caja');
     }
 
+    public function ingresos()
+    {
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+        $this->menuTienda($pendientes);
+
+        return view('tienda.caja-ingresos');
+    }
+
+    public function egresos()
+    {
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+        $this->menuTienda($pendientes);
+
+        return view('tienda.caja-egresos');
+    }
 
     /**
      * CIERRES
@@ -245,5 +378,25 @@ class TiendaController extends Controller
         $this->menuTienda($pendientes);
 
         return view('tienda.cierres');
+    }
+
+    public function historialCierres()
+    {
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+        $this->menuTienda($pendientes);
+
+        return view('tienda.historial-cierres');
+    }
+
+    public function ventasRealizadas()
+    {
+        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+        $this->menuTienda($pendientes);
+
+        $ventas = \App\Models\Venta::with(['detalles.producto', 'cajero'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('tienda.ventas-realizadas', compact('ventas'));
     }
 }
