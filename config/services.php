@@ -2,6 +2,10 @@
 
 return [
 
+    'pedidos_excel' => [
+        'url' => env('PEDIDOS_EXCEL_URL'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

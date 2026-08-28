@@ -15,7 +15,58 @@
         </div>
     @endif
 
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-file-excel mr-1"></i>
+                Pedidos del Excel para recoger hoy
+            </h3>
+        </div>
+        <div class="card-body p-0">
+            @if(count($pedidosExcel) > 0)
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Número de pedido</th>
+                                <th>Cliente</th>
+                                <th>Fecha de entrega</th>
+                                <th>Transferencia</th>
+                                <th>Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($pedidosExcel as $pedido)
+                                <tr>
+                                    <td><strong>{{ $pedido['numero'] ?: 'Sin número' }}</strong></td>
+                                    <td>{{ $pedido['cliente'] ?: 'Sin nombre' }}</td>
+                                    <td>{{ $pedido['fecha'] ?: 'Sin fecha' }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ $pedido['transferencia'] ? 'success' : 'warning' }}">
+                                            {{ $pedido['transferencia'] ?: 'No indicado' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ $pedido['saldo'] ? 'warning' : 'success' }}">
+                                            {{ $pedido['saldo'] ?: 'Sin saldo pendiente' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p class="mb-0">No hay pedidos para recoger hoy o el Excel no está disponible.</p>
+                </div>
+            @endif
+        </div>
+    </div>
+
     @if($detalleDespachos->count() > 0)
+        <h3 class="mt-4 mb-3">Pedidos registrados en el sistema</h3>
         <div class="row">
             @foreach($detalleDespachos as $detalle)
                 @php

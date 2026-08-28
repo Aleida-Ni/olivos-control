@@ -56,7 +56,7 @@ class DespachoController extends Controller
     /**
      * Menú exclusivo de despacho.
      */
-    private function menuDespacho($pendientes = 0)
+    public function menuDespacho($pendientes = 0)
     {
         config([
             'adminlte.menu' => [
@@ -69,6 +69,16 @@ class DespachoController extends Controller
                     'text' => 'Despachar',
                     'route' => 'despachos.create',
                     'icon' => 'fas fa-fw fa-truck',
+                ],
+                [
+                    'text' => 'Pedidos',
+                    'url' => route('tienda.pedidos', ['origen' => 'despacho']),
+                    'icon' => 'fas fa-fw fa-clipboard-list',
+                ],
+                [
+                    'text' => 'PAGOS CALL CENTER',
+                    'url' => route('tienda.pedidos', ['origen' => 'despacho']),
+                    'icon' => 'fas fa-fw fa-phone-alt',
                 ],
                 [
                     'text' => 'Historial de Despachos',
