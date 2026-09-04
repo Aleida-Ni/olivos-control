@@ -77,7 +77,7 @@ class DespachoController extends Controller
                 ],
                 [
                     'text' => 'PAGOS CALL CENTER',
-                    'url' => route('tienda.pedidos', ['origen' => 'despacho']),
+                    'url' => route('pagos-call-center.index', ['origen' => 'despacho']),
                     'icon' => 'fas fa-fw fa-phone-alt',
                 ],
                 [

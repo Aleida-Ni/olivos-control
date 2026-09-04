@@ -5,9 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\DespachoController;
-use App\Http\Controllers\TiendaController;
+use App\Http\Controllers\Tienda\TiendaController;
 use App\Http\Controllers\CajeroController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\Tienda\PagoCallCenterController;
 
 
 // =====================================================
@@ -105,6 +106,12 @@ Route::prefix('tienda')->group(function () {
 
     Route::get('/pedidos', [TiendaController::class, 'pedidos'])
         ->name('tienda.pedidos');
+
+    Route::get('/pagos-call-center', [PagoCallCenterController::class, 'index'])
+        ->name('pagos-call-center.index');
+
+    Route::post('/pagos-call-center', [PagoCallCenterController::class, 'store'])
+        ->name('pagos-call-center.store');
 
     Route::post('/pedidos/{detalleDespacho}/cobrar', [TiendaController::class, 'cobrarPedido'])
         ->name('tienda.pedidos.cobrar');

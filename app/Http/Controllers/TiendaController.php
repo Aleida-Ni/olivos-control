@@ -56,7 +56,11 @@ class TiendaController extends Controller
                     'icon' => 'fas fa-fw fa-clipboard-list',
                 ],
 
-
+                [
+                    'text' => 'Pagos Call Center',
+                    'url' => route('pagos-call-center.index', ['origen' => 'tienda']),
+                    'icon' => 'fas fa-fw fa-phone-alt',
+                ],
 
                 // =========================
                 // TIENDA

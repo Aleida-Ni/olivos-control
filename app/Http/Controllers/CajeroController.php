@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Despacho;
-use App\Http\Controllers\TiendaController;
+use App\Http\Controllers\Tienda\TiendaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -40,7 +40,8 @@ class CajeroController extends Controller
     {
         $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
-        app(TiendaController::class)->menuTienda($pendientes);
+        $tiendaController = new TiendaController();
+        $tiendaController->menuTienda($pendientes);
     }
 
 

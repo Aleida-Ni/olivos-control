@@ -6,6 +6,7 @@ use App\Models\Despacho;
 use App\Models\Producto;
 use App\Models\User;
 use App\Models\Venta;
+use App\Http\Controllers\Tienda\TiendaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +20,8 @@ class VentaController extends Controller
     {
         $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
-        app(TiendaController::class)->menuTienda($pendientes);
+        $tiendaController = new TiendaController();
+        $tiendaController->menuTienda($pendientes);
 
         $productos = Producto::where('activo', true)
             ->with(['categoria', 'inventario'])
