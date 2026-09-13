@@ -1,3 +1,4 @@
+```php
 @extends('adminlte::page')
 
 @section('title', 'Despachar')
@@ -13,7 +14,7 @@
             </h1>
 
             <p class="text-muted mb-0">
-                Selecciona los productos que serán enviados a tienda.
+                Selecciona los productos y pedidos que serán enviados a tienda.
             </p>
         </div>
 
@@ -60,9 +61,7 @@
                                 justify-content:center;
                             "
                         >
-
                             <i class="fas fa-shopping-basket"></i>
-
                         </div>
 
                         <div>
@@ -78,6 +77,14 @@
                                 </span>
 
                                 productos seleccionados
+
+                                <span class="mx-2">|</span>
+
+                                <span id="totalPedidos">
+                                    0
+                                </span>
+
+                                pedidos RECOGERA
 
                             </div>
 
@@ -419,7 +426,7 @@
 
 
         {{-- ===================================================== --}}
-        {{-- RESUMEN --}}
+        {{-- RESUMEN PRODUCTOS --}}
         {{-- ===================================================== --}}
 
         <div class="card">
@@ -430,7 +437,7 @@
 
                     <i class="fas fa-clipboard-list"></i>
 
-                    Despacho actual
+                    Productos seleccionados
 
                 </h3>
 
@@ -442,9 +449,7 @@
                 <div id="resumen">
 
                     <p class="text-muted">
-
                         Todavía no agregaste productos.
-
                     </p>
 
                 </div>
@@ -455,7 +460,7 @@
 
 
         {{-- ===================================================== --}}
-        {{-- PEDIDOS --}}
+        {{-- PEDIDOS RECOGERA --}}
         {{-- ===================================================== --}}
 
         <div class="card">
@@ -464,9 +469,9 @@
 
                 <h3 class="card-title">
 
-                    <i class="fas fa-file-alt"></i>
+                    <i class="fas fa-shopping-bag"></i>
 
-                    Pedidos especiales
+                    Pedidos RECOGERA
 
                 </h3>
 
@@ -475,23 +480,214 @@
 
             <div class="card-body">
 
-                <button
-                    type="button"
-                    class="btn btn-outline-primary"
-                    onclick="agregarPedido()"
-                >
+                <p class="text-muted">
+                    Selecciona los pedidos RECOGERA que serán enviados a tienda.
+                </p>
 
-                    <i class="fas fa-plus"></i>
 
-                    Agregar pedido
+                {{-- BUSCAR PEDIDO --}}
 
-                </button>
+                <div class="mb-4">
 
+                    <label>
+
+                        <i class="fas fa-search"></i>
+
+                        Buscar número de pedido
+
+                    </label>
+
+                    <input
+                        type="text"
+                        id="buscarPedido"
+                        class="form-control form-control-lg"
+                        placeholder="Escribe el número de pedido..."
+                    >
+
+                </div>
+
+
+                {{-- LISTA DE PEDIDOS --}}
 
                 <div
-                    id="pedidos"
-                    class="mt-3"
-                ></div>
+                    class="row"
+                    id="listaPedidos"
+                >
+
+                    @forelse($pedidos ?? [] as $pedido)
+
+                        <div
+                            class="col-xl-3 col-lg-4 col-md-6 mb-3 pedido-item"
+                            data-numero="{{ strtolower($pedido->numero_pedido) }}"
+                        >
+
+                            <div
+                                class="card pedido-card h-100 shadow-sm"
+                                id="pedido-card-{{ $pedido->id }}"
+                            >
+
+                                <div class="card-body">
+
+                                    <div class="d-flex justify-content-between align-items-start">
+
+                                        <div>
+
+                                            <h4 class="font-weight-bold mb-1">
+
+                                                #{{ $pedido->numero_pedido }}
+
+                                            </h4>
+
+                                            <div class="text-muted">
+
+                                                {{ $pedido->cliente }}
+
+                                            </div>
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <span class="badge badge-primary">
+                                                RECOGERA
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {{-- INFORMACIÓN DEL PEDIDO --}}
+
+                                    @if(isset($pedido->detalles) && $pedido->detalles->count())
+
+                                        <hr>
+
+                                        @foreach($pedido->detalles as $detalle)
+
+                                            <div class="d-flex justify-content-between mb-1">
+
+                                                <span>
+                                                    {{ $detalle->producto->nombre ?? 'Producto' }}
+                                                </span>
+
+                                                <strong>
+                                                    x{{ $detalle->cantidad }}
+                                                </strong>
+
+                                            </div>
+
+                                        @endforeach
+
+                                    @elseif(isset($pedido->producto))
+
+                                        <hr>
+
+                                        <div class="d-flex justify-content-between">
+
+                                            <span>
+                                                {{ $pedido->producto->nombre }}
+                                            </span>
+
+                                            <strong>
+                                                x{{ $pedido->cantidad }}
+                                            </strong>
+
+                                        </div>
+
+                                    @endif
+
+
+                                    {{-- SELECCIONAR --}}
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-danger btn-block mt-3"
+                                        onclick="seleccionarPedido({{ $pedido->id }})"
+                                        id="btn-pedido-{{ $pedido->id }}"
+                                    >
+
+                                        <i class="fas fa-plus"></i>
+
+                                        SELECCIONAR
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    @empty
+
+                        <div class="col-12">
+
+                            <div class="alert alert-info">
+
+                                <i class="fas fa-info-circle"></i>
+
+                                No hay pedidos RECOGERA pendientes para despachar.
+
+                            </div>
+
+                        </div>
+
+                    @endforelse
+
+                </div>
+
+
+                {{-- SIN RESULTADOS PEDIDOS --}}
+
+                <div
+                    id="sinPedidos"
+                    class="text-center text-muted py-4"
+                    style="display:none;"
+                >
+
+                    <i class="fas fa-search fa-2x mb-2"></i>
+
+                    <p>
+                        No se encontró ningún pedido.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {{-- ===================================================== --}}
+        {{-- RESUMEN PEDIDOS --}}
+        {{-- ===================================================== --}}
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h3 class="card-title">
+
+                    <i class="fas fa-file-invoice"></i>
+
+                    Pedidos seleccionados
+
+                </h3>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div id="resumenPedidos">
+
+                    <p class="text-muted">
+                        Todavía no seleccionaste pedidos.
+                    </p>
+
+                </div>
 
             </div>
 
@@ -516,7 +712,6 @@
 
             </div>
 
-
             <div class="card-body">
 
                 <textarea
@@ -531,13 +726,26 @@
         </div>
 
 
-        {{-- INPUT OCULTO DEL CHOFER --}}
+        {{-- ===================================================== --}}
+        {{-- INPUTS OCULTOS --}}
+        {{-- ===================================================== --}}
 
         <input
             type="hidden"
             name="chofer_id"
             id="chofer_id"
         >
+
+
+        {{-- AQUÍ SE CREARÁN LOS INPUTS DE PRODUCTOS --}}
+
+        <div id="inputsProductos"></div>
+
+
+        {{-- AQUÍ SE CREARÁN LOS INPUTS DE PEDIDOS --}}
+
+        <div id="inputsPedidos"></div>
+
 
     </form>
 
@@ -559,6 +767,23 @@
         box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
     }
 
+
+    .pedido-card {
+        border: 2px solid #eeeeee;
+        transition: all 0.2s ease;
+    }
+
+    .pedido-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
+    }
+
+
+    .pedido-seleccionado {
+        border: 2px solid #28a745 !important;
+        background: #f8fff9;
+    }
+
 </style>
 
 @stop
@@ -568,15 +793,23 @@
 
 <script>
 
+
+// ============================================================
+// VARIABLES
+// ============================================================
+
 let cantidades = {};
+
+let pedidosSeleccionados = {};
 
 
 // ============================================================
-// AUMENTAR
+// AUMENTAR PRODUCTO
 // ============================================================
 
 function aumentar(id, nombre)
 {
+
     if (!cantidades[id]) {
 
         cantidades[id] = {
@@ -593,15 +826,17 @@ function aumentar(id, nombre)
     mostrarResumen();
 
     actualizarBarraDespacho();
+
 }
 
 
 // ============================================================
-// DISMINUIR
+// DISMINUIR PRODUCTO
 // ============================================================
 
 function disminuir(id)
 {
+
     if (!cantidades[id]) {
         return;
     }
@@ -617,6 +852,7 @@ function disminuir(id)
     mostrarResumen();
 
     actualizarBarraDespacho();
+
 }
 
 
@@ -626,6 +862,7 @@ function disminuir(id)
 
 function actualizarCantidad(id)
 {
+
     let elemento =
         document.getElementById('cantidad-' + id);
 
@@ -635,28 +872,33 @@ function actualizarCantidad(id)
             cantidades[id]?.cantidad ?? 0;
 
     }
+
 }
 
 
 // ============================================================
-// MOSTRAR RESUMEN
+// MOSTRAR RESUMEN PRODUCTOS
 // ============================================================
 
 function mostrarResumen()
 {
+
     let html = '';
 
     let hayProductos = false;
+
 
     Object.keys(cantidades).forEach(function(id)
     {
 
         let producto = cantidades[id];
 
+
         if (producto.cantidad > 0)
         {
 
             hayProductos = true;
+
 
             html += `
 
@@ -689,9 +931,7 @@ function mostrarResumen()
         html = `
 
             <p class="text-muted">
-
                 Todavía no agregaste productos.
-
             </p>
 
         `;
@@ -701,32 +941,187 @@ function mostrarResumen()
 
     document.getElementById('resumen').innerHTML =
         html;
+
 }
 
 
 // ============================================================
-// ACTUALIZAR BARRA SUPERIOR
+// SELECCIONAR PEDIDO
+// ============================================================
+
+function seleccionarPedido(id)
+{
+
+    let tarjeta =
+        document.getElementById('pedido-card-' + id);
+
+    let boton =
+        document.getElementById('btn-pedido-' + id);
+
+
+    if (pedidosSeleccionados[id])
+    {
+
+        delete pedidosSeleccionados[id];
+
+
+        tarjeta.classList.remove('pedido-seleccionado');
+
+
+        boton.classList.remove('btn-success');
+
+        boton.classList.add('btn-outline-danger');
+
+
+        boton.innerHTML =
+            '<i class="fas fa-plus"></i> SELECCIONAR';
+
+    }
+    else
+    {
+
+        pedidosSeleccionados[id] = true;
+
+
+        tarjeta.classList.add('pedido-seleccionado');
+
+
+        boton.classList.remove('btn-outline-danger');
+
+        boton.classList.add('btn-success');
+
+
+        boton.innerHTML =
+            '<i class="fas fa-check"></i> SELECCIONADO';
+
+    }
+
+
+    mostrarResumenPedidos();
+
+    actualizarBarraDespacho();
+
+}
+
+
+// ============================================================
+// MOSTRAR RESUMEN DE PEDIDOS
+// ============================================================
+
+function mostrarResumenPedidos()
+{
+
+    let contenedor =
+        document.getElementById('resumenPedidos');
+
+
+    let ids =
+        Object.keys(pedidosSeleccionados);
+
+
+    if (ids.length === 0)
+    {
+
+        contenedor.innerHTML = `
+
+            <p class="text-muted">
+                Todavía no seleccionaste pedidos.
+            </p>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html = '';
+
+
+    ids.forEach(function(id)
+    {
+
+        let tarjeta =
+            document.getElementById('pedido-card-' + id);
+
+
+        if (tarjeta)
+        {
+
+            let numero =
+                tarjeta.querySelector('h4')?.innerText ?? 'Pedido';
+
+
+            let cliente =
+                tarjeta.querySelector('.text-muted')?.innerText ?? '';
+
+
+            html += `
+
+                <div
+                    class="d-flex justify-content-between
+                           align-items-center
+                           border-bottom py-3"
+                >
+
+                    <div>
+
+                        <strong>
+                            ${numero}
+                        </strong>
+
+                        <div class="text-muted">
+                            ${cliente}
+                        </div>
+
+                    </div>
+
+
+                    <span class="badge badge-success">
+                        SELECCIONADO
+                    </span>
+
+                </div>
+
+            `;
+
+        }
+
+    });
+
+
+    contenedor.innerHTML = html;
+
+}
+
+
+// ============================================================
+// ACTUALIZAR BARRA
 // ============================================================
 
 function actualizarBarraDespacho()
 {
+
     let total = 0;
+
 
     Object.values(cantidades).forEach(function(producto)
     {
+
         total += producto.cantidad;
+
     });
 
 
-    let pedidos =
-        document.querySelectorAll('#pedidos .pedido-card').length;
+    let totalPedidos =
+        Object.keys(pedidosSeleccionados).length;
 
 
     let barra =
         document.getElementById('barraDespacho');
 
 
-    if (total > 0 || pedidos > 0)
+    if (total > 0 || totalPedidos > 0)
     {
 
         barra.style.display = 'block';
@@ -742,149 +1137,11 @@ function actualizarBarraDespacho()
 
     document.getElementById('totalProductos')
         .innerText = total;
-}
 
 
-// ============================================================
-// AGREGAR PEDIDO
-// ============================================================
+    document.getElementById('totalPedidos')
+        .innerText = totalPedidos;
 
-function agregarPedido()
-{
-    let id = Date.now();
-
-    let html = `
-
-        <div
-            class="card border mb-3 pedido-card"
-            id="pedido-${id}"
-        >
-
-            <div class="card-body">
-
-                <div class="row">
-
-                    <div class="col-md-3">
-
-                        <label>
-                            Número de pedido
-                        </label>
-
-                        <input
-                            type="text"
-                            name="pedidos[${id}][numero_pedido]"
-                            class="form-control"
-                            placeholder="Ej: 25"
-                        >
-
-                    </div>
-
-
-                    <div class="col-md-3">
-
-                        <label>
-                            Cliente
-                        </label>
-
-                        <input
-                            type="text"
-                            name="pedidos[${id}][cliente]"
-                            class="form-control"
-                            placeholder="Nombre del cliente"
-                        >
-
-                    </div>
-
-
-                    <div class="col-md-4">
-
-                        <label>
-                            Producto
-                        </label>
-
-                        <select
-                            name="pedidos[${id}][producto_id]"
-                            class="form-control"
-                        >
-
-                            <option value="">
-                                Seleccione producto
-                            </option>
-
-                            @foreach($productos as $producto)
-
-                                <option value="{{ $producto->id }}">
-
-                                    {{ $producto->nombre }}
-
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="col-md-1">
-
-                        <label>
-                            Cantidad
-                        </label>
-
-                        <input
-                            type="number"
-                            name="pedidos[${id}][cantidad]"
-                            class="form-control"
-                            value="1"
-                            min="1"
-                        >
-
-                    </div>
-
-
-                    <div class="col-md-1">
-
-                        <label>
-                            &nbsp;
-                        </label>
-
-                        <button
-                            type="button"
-                            class="btn btn-danger"
-                            onclick="
-                                document
-                                .getElementById('pedido-${id}')
-                                .remove();
-
-                                actualizarBarraDespacho();
-                            "
-                        >
-
-                            <i class="fas fa-trash"></i>
-
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    document
-        .getElementById('pedidos')
-        .insertAdjacentHTML(
-            'beforeend',
-            html
-        );
-
-
-    actualizarBarraDespacho();
 }
 
 
@@ -931,9 +1188,7 @@ document
                 );
 
 
-                filtrarProductos(
-                    categoria
-                );
+                filtrarProductos(categoria);
 
             }
         );
@@ -942,11 +1197,12 @@ document
 
 
 // ============================================================
-// FILTRAR CATEGORÍAS
+// FILTRAR PRODUCTOS
 // ============================================================
 
 function filtrarProductos(categoria)
 {
+
     let visibles = 0;
 
 
@@ -986,11 +1242,12 @@ function filtrarProductos(categoria)
             visibles === 0
                 ? 'block'
                 : 'none';
+
 }
 
 
 // ============================================================
-// BUSCADOR
+// BUSCADOR PRODUCTOS
 // ============================================================
 
 document
@@ -1051,6 +1308,67 @@ document
 
 
 // ============================================================
+// BUSCADOR PEDIDOS
+// ============================================================
+
+document
+    .getElementById('buscarPedido')
+    .addEventListener(
+        'input',
+        function()
+        {
+
+            let texto =
+                this.value
+                    .toLowerCase()
+                    .trim();
+
+
+            let visibles = 0;
+
+
+            document
+                .querySelectorAll('.pedido-item')
+                .forEach(function(item)
+                {
+
+                    let numero =
+                        item.dataset.numero;
+
+
+                    if (
+                        texto === '' ||
+                        numero.includes(texto)
+                    )
+                    {
+
+                        item.style.display = '';
+
+                        visibles++;
+
+                    }
+                    else
+                    {
+
+                        item.style.display = 'none';
+
+                    }
+
+                });
+
+
+            document
+                .getElementById('sinPedidos')
+                .style.display =
+                    visibles === 0
+                        ? 'block'
+                        : 'none';
+
+        }
+    );
+
+
+// ============================================================
 // CAMBIAR CHOFER
 // ============================================================
 
@@ -1065,6 +1383,31 @@ document
                 .getElementById('chofer_id')
                 .value = this.value;
 
+
+            document
+                .getElementById('chofer_id_barra')
+                .value = this.value;
+
+        }
+    );
+
+
+document
+    .getElementById('chofer_id_barra')
+    .addEventListener(
+        'change',
+        function()
+        {
+
+            document
+                .getElementById('chofer_id')
+                .value = this.value;
+
+
+            document
+                .getElementById('chofer_id_principal')
+                .value = this.value;
+
         }
     );
 
@@ -1077,8 +1420,9 @@ function enviarDespacho()
 {
 
     let chofer =
-        document.getElementById('chofer_id_principal')
-        .value;
+        document
+            .getElementById('chofer_id_principal')
+            .value;
 
 
     if (!chofer)
@@ -1107,23 +1451,33 @@ function enviarDespacho()
 
 
     let hayPedidos =
-        document
-            .querySelectorAll(
-                '#pedidos .pedido-card'
-            )
-            .length > 0;
+        Object.keys(pedidosSeleccionados).length > 0;
 
 
     if (!hayProductos && !hayPedidos)
     {
 
         alert(
-            'Agrega al menos un producto o pedido.'
+            'Agrega al menos un producto o selecciona un pedido RECOGERA.'
         );
 
         return;
 
     }
+
+
+    // ========================================================
+    // LIMPIAR INPUTS ANTERIORES
+    // ========================================================
+
+    document
+        .getElementById('inputsProductos')
+        .innerHTML = '';
+
+
+    document
+        .getElementById('inputsPedidos')
+        .innerHTML = '';
 
 
     // ========================================================
@@ -1142,41 +1496,55 @@ function enviarDespacho()
             {
 
                 let input =
-                    document.getElementById(
-                        'producto-input-' + id
-                    );
+                    document.createElement('input');
 
 
-                if (!input)
-                {
-
-                    input =
-                        document.createElement(
-                            'input'
-                        );
-
-                    input.type = 'hidden';
-
-                    input.id =
-                        'producto-input-' + id;
-
-                    input.name =
-                        'productos[' + id + ']';
+                input.type = 'hidden';
 
 
-                    document
-                        .getElementById(
-                            'formDespacho'
-                        )
-                        .appendChild(input);
-
-                }
+                input.name =
+                    'productos[' + id + ']';
 
 
                 input.value =
                     cantidad;
 
+
+                document
+                    .getElementById('inputsProductos')
+                    .appendChild(input);
+
             }
+
+        });
+
+
+    // ========================================================
+    // CREAR INPUTS DE PEDIDOS
+    // ========================================================
+
+    Object.keys(pedidosSeleccionados)
+        .forEach(function(id)
+        {
+
+            let input =
+                document.createElement('input');
+
+
+            input.type = 'hidden';
+
+
+            input.name =
+                'pedidos[]';
+
+
+            input.value =
+                id;
+
+
+            document
+                .getElementById('inputsPedidos')
+                .appendChild(input);
 
         });
 
@@ -1185,17 +1553,15 @@ function enviarDespacho()
     // CONFIRMAR
     // ========================================================
 
-    if (
-        confirm(
-            '¿Estás segura de que deseas despachar estos productos a la tienda?'
-        )
-    )
+    let mensaje =
+        '¿Estás segura de que deseas despachar estos productos y pedidos a la tienda?';
+
+
+    if (confirm(mensaje))
     {
 
         document
-            .getElementById(
-                'formDespacho'
-            )
+            .getElementById('formDespacho')
             .submit();
 
     }
@@ -1205,3 +1571,4 @@ function enviarDespacho()
 </script>
 
 @stop
+```

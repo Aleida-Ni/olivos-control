@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Despacho;
 use App\Models\Chofer;
 use App\Models\Producto;
+use App\Models\Pedido;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,27 +15,35 @@ class DespachoController extends Controller
     /**
      * Lista principal de despachos.
      */
-    public function index()
-    {
-        $choferes = Chofer::where('activo', true)
-            ->orderBy('nombre')
-            ->get();
+public function index()
+{
+    $choferes = Chofer::where('activo', true)
+        ->orderBy('nombre')
+        ->get();
 
-        $productos = Producto::where('activo', true)
-            ->with('categoria')
-            ->orderBy('nombre')
-            ->get();
+    $productos = Producto::where('activo', true)
+        ->with('categoria')
+        ->orderBy('nombre')
+        ->get();
 
-        $pendientes = Despacho::where('estado', 'ENVIADO')->count();
+    // Pedidos RECOGERA que todavía no fueron enviados a despacho
+    $pedidos = Pedido::where('tipo_entrega', 'RECOGERA')
+        ->whereNull('despacho_id')
+        ->with('producto')
+        ->orderBy('numero_pedido')
+        ->get();
 
-        $this->menuDespacho($pendientes);
+    $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
-        return view('despachos.index', compact(
-            'choferes',
-            'productos',
-            'pendientes'
-        ));
-    }
+    $this->menuDespacho($pendientes);
+
+    return view('despachos.index', compact(
+        'choferes',
+        'productos',
+        'pedidos',
+        'pendientes'
+    ));
+}
 
     /**
      * Inicio del módulo de despacho.

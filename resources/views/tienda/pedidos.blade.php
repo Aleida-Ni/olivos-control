@@ -65,6 +65,38 @@
         </div>
     </div>
 
+    @if($pedidosApi->count() > 0)
+        <div class="card card-success">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-store mr-1"></i> Pedidos RECOGERA recibidos por API</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Cliente</th>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pedidosApi as $pedido)
+                            <tr>
+                                <td><strong>{{ $pedido->numero_pedido ?: 'Sin número' }}</strong></td>
+                                <td>{{ $pedido->cliente ?: 'Sin cliente' }}</td>
+                                <td>{{ $pedido->producto->nombre ?? 'Sin producto' }}</td>
+                                <td>{{ $pedido->cantidad }}</td>
+                                <td><span class="badge badge-info">{{ $pedido->estado }}</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     @if($detalleDespachos->count() > 0)
         <h3 class="mt-4 mb-3">Pedidos registrados en el sistema</h3>
         <div class="row">

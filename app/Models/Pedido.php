@@ -14,6 +14,7 @@ class Pedido extends Model
         'numero_pedido',
         'cliente',
         'telefono',
+        'tipo_entrega',
         'producto_id',
         'cantidad',
         'precio_unitario',

@@ -229,9 +229,15 @@ class TiendaController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $pedidosApi = \App\Models\Pedido::with('producto')
+            ->whereRaw('UPPER(tipo_entrega) = ?', ['RECOGERA'])
+            ->whereDate('created_at', today())
+            ->latest()
+            ->get();
+
         $pedidosExcel = $this->pedidosDelExcel();
 
-        return view('tienda.pedidos', compact('detalleDespachos', 'pedidosExcel'));
+        return view('tienda.pedidos', compact('detalleDespachos', 'pedidosExcel', 'pedidosApi'));
     }
 
     private function pedidosDelExcel(): array
