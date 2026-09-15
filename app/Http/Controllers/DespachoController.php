@@ -9,13 +9,14 @@ use App\Models\Pedido;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\GoogleSheetsService;
 
 class DespachoController extends Controller
 {
     /**
      * Lista principal de despachos.
      */
-public function index()
+public function index(GoogleSheetsService $googleSheets)
 {
     $choferes = Chofer::where('activo', true)
         ->orderBy('nombre')
@@ -26,12 +27,33 @@ public function index()
         ->orderBy('nombre')
         ->get();
 
-    // Pedidos RECOGERA que todavía no fueron enviados a despacho
-    $pedidos = Pedido::where('tipo_entrega', 'RECOGERA')
-        ->whereNull('despacho_id')
-        ->with('producto')
-        ->orderBy('numero_pedido')
-        ->get();
+    $pedidos = [];
+
+    try {
+        $filas = $googleSheets->obtenerPedidos();
+
+        foreach ($filas as $fila) {
+
+            $direccion = strtoupper(
+                trim($fila['Dirección de Entrega'] ?? '')
+            );
+
+            if ($direccion !== 'RECOGERA') {
+                continue;
+            }
+
+            $pedidos[] = $fila;
+        }
+
+    } catch (\Exception $e) {
+
+        $pedidos = [];
+
+        session()->flash(
+            'error',
+            'No se pudo leer la planilla de Google Sheets.'
+        );
+    }
 
     $pendientes = Despacho::where('estado', 'ENVIADO')->count();
 
