@@ -36,4 +36,8 @@ class Despacho extends Model
     {
         return $this->hasMany(DetalleDespacho::class);
     }
+    public function pedidos(): HasMany
+{
+    return $this->hasMany(Pedido::class);
+}
 }

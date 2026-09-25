@@ -132,7 +132,7 @@ public function index(GoogleSheetsService $googleSheets)
                 ],
                 [
                     'text' => 'Inventario',
-                    'url' => '#',
+                    'route' => 'tienda.inventario',
                     'icon' => 'fas fa-fw fa-boxes',
                 ],
                 [

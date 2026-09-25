@@ -1,4 +1,3 @@
-```php
 @extends('adminlte::page')
 
 @section('title', 'Despachar')
@@ -240,7 +239,7 @@
 
                 <div class="mb-4">
 
-                    <label>
+                    <label for="buscarProducto">
 
                         <i class="fas fa-search"></i>
 
@@ -341,16 +340,12 @@
                                         class="font-weight-bold"
                                         style="min-height:45px;"
                                     >
-
                                         {{ $producto->nombre }}
-
                                     </h5>
 
 
                                     <small class="text-muted">
-
                                         {{ $producto->categoria->nombre ?? '' }}
-
                                     </small>
 
 
@@ -383,7 +378,7 @@
                                             class="btn btn-danger btn-lg"
                                             onclick="aumentar(
                                                 {{ $producto->id }},
-                                                '{{ addslashes($producto->nombre) }}'
+                                                @json($producto->nombre)
                                             )"
                                         >
 
@@ -481,7 +476,7 @@
             <div class="card-body">
 
                 <p class="text-muted">
-                    Selecciona los pedidos RECOGERA que serán enviados a tienda.
+                    Escribe el número de pedido para buscarlo.
                 </p>
 
 
@@ -489,7 +484,7 @@
 
                 <div class="mb-4">
 
-                    <label>
+                    <label for="buscarPedido">
 
                         <i class="fas fa-search"></i>
 
@@ -501,8 +496,41 @@
                         type="text"
                         id="buscarPedido"
                         class="form-control form-control-lg"
-                        placeholder="Escribe el número de pedido..."
+                        placeholder="Ejemplo: 56"
+                        autocomplete="off"
                     >
+
+                </div>
+
+
+                {{-- CARGANDO --}}
+
+                <div
+                    id="cargandoPedido"
+                    class="text-center py-4"
+                    style="display:none;"
+                >
+
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+
+                    <p class="mt-2 mb-0">
+                        Buscando pedido...
+                    </p>
+
+                </div>
+
+
+                {{-- MENSAJE INICIAL --}}
+
+                <div
+                    id="mensajePedido"
+                    class="alert alert-info"
+                >
+
+                    <i class="fas fa-info-circle"></i>
+
+                    Escribe el número de pedido para buscar un pedido
+                    RECOGERA de hoy.
 
                 </div>
 
@@ -512,134 +540,10 @@
                 <div
                     class="row"
                     id="listaPedidos"
-                >
-
-                    @forelse($pedidos ?? [] as $pedido)
-
-                        <div
-                            class="col-xl-3 col-lg-4 col-md-6 mb-3 pedido-item"
-                            data-numero="{{ strtolower($pedido->numero_pedido) }}"
-                        >
-
-                            <div
-                                class="card pedido-card h-100 shadow-sm"
-                                id="pedido-card-{{ $pedido->id }}"
-                            >
-
-                                <div class="card-body">
-
-                                    <div class="d-flex justify-content-between align-items-start">
-
-                                        <div>
-
-                                            <h4 class="font-weight-bold mb-1">
-
-                                                #{{ $pedido->numero_pedido }}
-
-                                            </h4>
-
-                                            <div class="text-muted">
-
-                                                {{ $pedido->cliente }}
-
-                                            </div>
-
-                                        </div>
+                ></div>
 
 
-                                        <div>
-
-                                            <span class="badge badge-primary">
-                                                RECOGERA
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    {{-- INFORMACIÓN DEL PEDIDO --}}
-
-                                    @if(isset($pedido->detalles) && $pedido->detalles->count())
-
-                                        <hr>
-
-                                        @foreach($pedido->detalles as $detalle)
-
-                                            <div class="d-flex justify-content-between mb-1">
-
-                                                <span>
-                                                    {{ $detalle->producto->nombre ?? 'Producto' }}
-                                                </span>
-
-                                                <strong>
-                                                    x{{ $detalle->cantidad }}
-                                                </strong>
-
-                                            </div>
-
-                                        @endforeach
-
-                                    @elseif(isset($pedido->producto))
-
-                                        <hr>
-
-                                        <div class="d-flex justify-content-between">
-
-                                            <span>
-                                                {{ $pedido->producto->nombre }}
-                                            </span>
-
-                                            <strong>
-                                                x{{ $pedido->cantidad }}
-                                            </strong>
-
-                                        </div>
-
-                                    @endif
-
-
-                                    {{-- SELECCIONAR --}}
-
-                                    <button
-                                        type="button"
-                                        class="btn btn-outline-danger btn-block mt-3"
-                                        onclick="seleccionarPedido({{ $pedido->id }})"
-                                        id="btn-pedido-{{ $pedido->id }}"
-                                    >
-
-                                        <i class="fas fa-plus"></i>
-
-                                        SELECCIONAR
-
-                                    </button>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    @empty
-
-                        <div class="col-12">
-
-                            <div class="alert alert-info">
-
-                                <i class="fas fa-info-circle"></i>
-
-                                No hay pedidos RECOGERA pendientes para despachar.
-
-                            </div>
-
-                        </div>
-
-                    @endforelse
-
-                </div>
-
-
-                {{-- SIN RESULTADOS PEDIDOS --}}
+                {{-- SIN PEDIDOS --}}
 
                 <div
                     id="sinPedidos"
@@ -650,7 +554,7 @@
                     <i class="fas fa-search fa-2x mb-2"></i>
 
                     <p>
-                        No se encontró ningún pedido.
+                        No se encontró ningún pedido RECOGERA con ese número.
                     </p>
 
                 </div>
@@ -736,16 +640,9 @@
             id="chofer_id"
         >
 
-
-        {{-- AQUÍ SE CREARÁN LOS INPUTS DE PRODUCTOS --}}
-
         <div id="inputsProductos"></div>
 
-
-        {{-- AQUÍ SE CREARÁN LOS INPUTS DE PEDIDOS --}}
-
         <div id="inputsPedidos"></div>
-
 
     </form>
 
@@ -784,6 +681,23 @@
         background: #f8fff9;
     }
 
+
+    .pedido-dato {
+        margin-bottom: 6px;
+    }
+
+
+    .pedido-dato strong {
+        min-width: 120px;
+        display: inline-block;
+    }
+
+
+    .pedido-completo {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
 </style>
 
 @stop
@@ -793,14 +707,17 @@
 
 <script>
 
-
 // ============================================================
 // VARIABLES
 // ============================================================
 
 let cantidades = {};
 
-let pedidosSeleccionados = {};
+let pedidosAPI = {};
+
+let pedidoActualEncontrado = null;
+
+let temporizadorBusqueda = null;
 
 
 // ============================================================
@@ -809,7 +726,6 @@ let pedidosSeleccionados = {};
 
 function aumentar(id, nombre)
 {
-
     if (!cantidades[id]) {
 
         cantidades[id] = {
@@ -826,7 +742,6 @@ function aumentar(id, nombre)
     mostrarResumen();
 
     actualizarBarraDespacho();
-
 }
 
 
@@ -836,7 +751,6 @@ function aumentar(id, nombre)
 
 function disminuir(id)
 {
-
     if (!cantidades[id]) {
         return;
     }
@@ -852,7 +766,6 @@ function disminuir(id)
     mostrarResumen();
 
     actualizarBarraDespacho();
-
 }
 
 
@@ -862,7 +775,6 @@ function disminuir(id)
 
 function actualizarCantidad(id)
 {
-
     let elemento =
         document.getElementById('cantidad-' + id);
 
@@ -872,7 +784,6 @@ function actualizarCantidad(id)
             cantidades[id]?.cantidad ?? 0;
 
     }
-
 }
 
 
@@ -882,23 +793,19 @@ function actualizarCantidad(id)
 
 function mostrarResumen()
 {
-
     let html = '';
 
     let hayProductos = false;
-
 
     Object.keys(cantidades).forEach(function(id)
     {
 
         let producto = cantidades[id];
 
-
         if (producto.cantidad > 0)
         {
 
             hayProductos = true;
-
 
             html += `
 
@@ -909,7 +816,7 @@ function mostrarResumen()
                 >
 
                     <span>
-                        ${producto.nombre}
+                        ${escapeHtml(producto.nombre)}
                     </span>
 
                     <strong>
@@ -941,7 +848,425 @@ function mostrarResumen()
 
     document.getElementById('resumen').innerHTML =
         html;
+}
 
+
+// ============================================================
+// BUSCAR PEDIDO RECOGERA EN API
+// ============================================================
+
+document
+    .getElementById('buscarPedido')
+    .addEventListener(
+        'input',
+        function()
+        {
+
+            let numero =
+                this.value
+                    .trim();
+
+
+            clearTimeout(temporizadorBusqueda);
+
+
+            document
+                .getElementById('listaPedidos')
+                .innerHTML = '';
+
+
+            document
+                .getElementById('sinPedidos')
+                .style.display = 'none';
+
+
+            document
+                .getElementById('cargandoPedido')
+                .style.display = 'none';
+
+
+            pedidoActualEncontrado = null;
+
+
+            if (numero === '')
+            {
+
+                document
+                    .getElementById('mensajePedido')
+                    .style.display = 'block';
+
+                return;
+
+            }
+
+
+            document
+                .getElementById('mensajePedido')
+                .style.display = 'none';
+
+
+            temporizadorBusqueda =
+                setTimeout(
+                    function()
+                    {
+                        buscarPedidoAPI(numero);
+                    },
+                    400
+                );
+
+        }
+    );
+
+
+// ============================================================
+// CONSULTAR API
+// ============================================================
+
+async function buscarPedidoAPI(numero)
+{
+    let lista =
+        document.getElementById('listaPedidos');
+
+    let cargando =
+        document.getElementById('cargandoPedido');
+
+    let sinPedidos =
+        document.getElementById('sinPedidos');
+
+
+    cargando.style.display = 'block';
+
+    sinPedidos.style.display = 'none';
+
+
+    try {
+
+        const respuesta = await fetch(
+            `/api/pedidos/recogera/${encodeURIComponent(numero)}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }
+        );
+
+
+        const resultado =
+            await respuesta.json();
+
+
+        if (!respuesta.ok) {
+
+            lista.innerHTML = '';
+
+            sinPedidos.style.display = 'block';
+
+            return;
+
+        }
+
+
+        if (!resultado.data) {
+
+            lista.innerHTML = '';
+
+            sinPedidos.style.display = 'block';
+
+            return;
+
+        }
+
+
+        mostrarPedidoAPI(resultado.data);
+
+
+    } catch (error) {
+
+        console.error(
+            'Error al consultar la API:',
+            error
+        );
+
+        lista.innerHTML = '';
+
+        sinPedidos.style.display = 'block';
+
+    } finally {
+
+        cargando.style.display = 'none';
+
+    }
+}
+
+
+// ============================================================
+// MOSTRAR PEDIDO ENCONTRADO
+// ============================================================
+
+function mostrarPedidoAPI(pedido)
+{
+    let lista =
+        document.getElementById('listaPedidos');
+
+
+    pedidoActualEncontrado =
+        pedido;
+
+
+    lista.innerHTML = '';
+
+
+    let datosCompletos = '';
+
+
+    /*
+     * Mostrar toda la fila original
+     * que viene del enlace.
+     */
+
+    if (
+        pedido.fila &&
+        typeof pedido.fila === 'object'
+    ) {
+
+        Object.entries(pedido.fila)
+            .forEach(function ([campo, valor])
+            {
+
+                if (
+                    valor === null ||
+                    valor === undefined ||
+                    String(valor).trim() === ''
+                ) {
+                    return;
+                }
+
+
+                datosCompletos += `
+
+                    <div class="pedido-dato">
+
+                        <strong>
+                            ${escapeHtml(
+                                formatearCampo(campo)
+                            )}
+                        </strong>
+
+                        <span>
+                            ${escapeHtml(valor)}
+                        </span>
+
+                    </div>
+
+                `;
+
+            });
+
+    }
+
+
+    let tarjeta =
+        document.createElement('div');
+
+
+    tarjeta.className =
+        'col-xl-5 col-lg-6 col-md-8 col-sm-12 mb-3';
+
+
+    tarjeta.innerHTML = `
+
+        <div
+            class="card pedido-card h-100 shadow-sm"
+            id="pedido-card-api-${escapeHtml(
+                String(pedido.numero_pedido)
+            )}"
+        >
+
+            <div class="card-body">
+
+                {{-- CABECERA --}}
+
+                <div
+                    class="d-flex
+                           justify-content-between
+                           align-items-start"
+                >
+
+                    <div>
+
+                        <h3 class="font-weight-bold mb-1">
+
+                            #${escapeHtml(
+                                String(
+                                    pedido.numero_pedido
+                                    || ''
+                                )
+                            )}
+
+                        </h3>
+
+                        <div class="text-muted">
+
+                            ${escapeHtml(
+                                pedido.cliente ||
+                                'Sin cliente'
+                            )}
+
+                        </div>
+
+                    </div>
+
+
+                    <span class="badge badge-primary">
+
+                        RECOGERA
+
+                    </span>
+
+                </div>
+
+
+                <hr>
+
+
+                {{-- DATOS PRINCIPALES --}}
+
+                <div class="pedido-dato">
+
+                    <strong>
+                        Cliente:
+                    </strong>
+
+                    <span>
+                        ${escapeHtml(
+                            pedido.cliente ||
+                            'No registrado'
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="pedido-dato">
+
+                    <strong>
+                        Teléfono:
+                    </strong>
+
+                    <span>
+                        ${escapeHtml(
+                            pedido.telefono ||
+                            'No registrado'
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="pedido-dato">
+
+                    <strong>
+                        Fecha:
+                    </strong>
+
+                    <span>
+                        ${escapeHtml(
+                            pedido.fecha ||
+                            ''
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="pedido-dato">
+
+                    <strong>
+                        Pago:
+                    </strong>
+
+                    <span>
+                        ${escapeHtml(
+                            pedido.transferencia ||
+                            'No registrado'
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="pedido-dato">
+
+                    <strong>
+                        Saldo:
+                    </strong>
+
+                    <span>
+                        ${escapeHtml(
+                            pedido.saldo ||
+                            '0'
+                        )}
+                    </span>
+
+                </div>
+
+
+                {{-- INFORMACIÓN COMPLETA --}}
+
+                <hr>
+
+                <details>
+
+                    <summary
+                        class="text-primary"
+                        style="cursor:pointer;"
+                    >
+                        <i class="fas fa-list"></i>
+                        Ver toda la información
+                    </summary>
+
+
+                    <div class="pedido-completo mt-3">
+
+                        ${
+                            datosCompletos ||
+                            '<p class="text-muted">No hay más información disponible.</p>'
+                        }
+
+                    </div>
+
+                </details>
+
+
+                {{-- SELECCIONAR --}}
+
+                <button
+                    type="button"
+                    class="btn btn-outline-danger btn-block mt-3"
+                    onclick="seleccionarPedidoPorNumero(
+                        ${JSON.stringify(
+                            String(
+                                pedido.numero_pedido || ''
+                            )
+                        )}
+                    )"
+                >
+
+                    <i class="fas fa-plus"></i>
+
+                    SELECCIONAR
+
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    lista.appendChild(tarjeta);
 }
 
 
@@ -949,50 +1274,91 @@ function mostrarResumen()
 // SELECCIONAR PEDIDO
 // ============================================================
 
-function seleccionarPedido(id)
+function seleccionarPedidoPorNumero(numero)
 {
-
-    let tarjeta =
-        document.getElementById('pedido-card-' + id);
-
-    let boton =
-        document.getElementById('btn-pedido-' + id);
+    let pedido =
+        pedidoActualEncontrado;
 
 
-    if (pedidosSeleccionados[id])
-    {
+    if (
+        !pedido ||
+        String(pedido.numero_pedido) !== String(numero)
+    ) {
 
-        delete pedidosSeleccionados[id];
-
-
-        tarjeta.classList.remove('pedido-seleccionado');
-
-
-        boton.classList.remove('btn-success');
-
-        boton.classList.add('btn-outline-danger');
-
-
-        boton.innerHTML =
-            '<i class="fas fa-plus"></i> SELECCIONAR';
+        return;
 
     }
-    else
-    {
-
-        pedidosSeleccionados[id] = true;
 
 
-        tarjeta.classList.add('pedido-seleccionado');
+    let clave =
+        String(pedido.numero_pedido);
 
 
-        boton.classList.remove('btn-outline-danger');
+    let tarjeta =
+        document.getElementById(
+            'pedido-card-api-' + clave
+        );
 
-        boton.classList.add('btn-success');
+
+    if (pedidosAPI[clave]) {
+
+        delete pedidosAPI[clave];
 
 
-        boton.innerHTML =
-            '<i class="fas fa-check"></i> SELECCIONADO';
+        if (tarjeta) {
+
+            tarjeta
+                .querySelector('button')
+                .classList.remove('btn-success');
+
+            tarjeta
+                .querySelector('button')
+                .classList.add('btn-outline-danger');
+
+            tarjeta
+                .querySelector('button')
+                .innerHTML =
+                    '<i class="fas fa-plus"></i> SELECCIONAR';
+
+            tarjeta
+                .classList.remove(
+                    'pedido-seleccionado'
+                );
+
+        }
+
+    }
+    else {
+
+        pedidosAPI[clave] =
+            pedido;
+
+
+        if (tarjeta) {
+
+            tarjeta
+                .querySelector('button')
+                .classList.remove(
+                    'btn-outline-danger'
+                );
+
+            tarjeta
+                .querySelector('button')
+                .classList.add(
+                    'btn-success'
+                );
+
+            tarjeta
+                .querySelector('button')
+                .innerHTML =
+                    '<i class="fas fa-check"></i> SELECCIONADO';
+
+            tarjeta
+                .classList.add(
+                    'pedido-seleccionado'
+                );
+
+        }
 
     }
 
@@ -1001,26 +1367,28 @@ function seleccionarPedido(id)
 
     actualizarBarraDespacho();
 
+    prepararInputsPedidos();
+
 }
 
 
 // ============================================================
-// MOSTRAR RESUMEN DE PEDIDOS
+// RESUMEN PEDIDOS
 // ============================================================
 
 function mostrarResumenPedidos()
 {
-
     let contenedor =
-        document.getElementById('resumenPedidos');
+        document.getElementById(
+            'resumenPedidos'
+        );
 
 
-    let ids =
-        Object.keys(pedidosSeleccionados);
+    let pedidos =
+        Object.values(pedidosAPI);
 
 
-    if (ids.length === 0)
-    {
+    if (pedidos.length === 0) {
 
         contenedor.innerHTML = `
 
@@ -1031,117 +1399,232 @@ function mostrarResumenPedidos()
         `;
 
         return;
-
     }
 
 
     let html = '';
 
 
-    ids.forEach(function(id)
+    pedidos.forEach(function(pedido)
     {
 
-        let tarjeta =
-            document.getElementById('pedido-card-' + id);
+        html += `
 
+            <div
+                class="d-flex
+                       justify-content-between
+                       align-items-center
+                       border-bottom py-3"
+            >
 
-        if (tarjeta)
-        {
+                <div>
 
-            let numero =
-                tarjeta.querySelector('h4')?.innerText ?? 'Pedido';
+                    <strong>
+                        #${escapeHtml(
+                            String(
+                                pedido.numero_pedido
+                            )
+                        )}
+                    </strong>
 
+                    <div class="text-muted">
 
-            let cliente =
-                tarjeta.querySelector('.text-muted')?.innerText ?? '';
-
-
-            html += `
-
-                <div
-                    class="d-flex justify-content-between
-                           align-items-center
-                           border-bottom py-3"
-                >
-
-                    <div>
-
-                        <strong>
-                            ${numero}
-                        </strong>
-
-                        <div class="text-muted">
-                            ${cliente}
-                        </div>
+                        ${escapeHtml(
+                            pedido.cliente ||
+                            'Sin cliente'
+                        )}
 
                     </div>
 
-
-                    <span class="badge badge-success">
-                        SELECCIONADO
-                    </span>
-
                 </div>
 
-            `;
 
-        }
+                <span class="badge badge-success">
+
+                    SELECCIONADO
+
+                </span>
+
+            </div>
+
+        `;
 
     });
 
 
-    contenedor.innerHTML = html;
-
+    contenedor.innerHTML =
+        html;
 }
 
 
 // ============================================================
-// ACTUALIZAR BARRA
+// ACTUALIZAR BARRA DE DESPACHO
 // ============================================================
 
 function actualizarBarraDespacho()
 {
+    let total =
+        0;
 
-    let total = 0;
 
+    Object.values(cantidades)
+        .forEach(function(producto)
+        {
 
-    Object.values(cantidades).forEach(function(producto)
-    {
+            total +=
+                Number(producto.cantidad || 0);
 
-        total += producto.cantidad;
-
-    });
+        });
 
 
     let totalPedidos =
-        Object.keys(pedidosSeleccionados).length;
+        Object.keys(pedidosAPI).length;
 
 
     let barra =
-        document.getElementById('barraDespacho');
+        document.getElementById(
+            'barraDespacho'
+        );
 
 
-    if (total > 0 || totalPedidos > 0)
-    {
+    if (
+        total > 0 ||
+        totalPedidos > 0
+    ) {
 
-        barra.style.display = 'block';
+        barra.style.display =
+            'block';
 
     }
-    else
-    {
+    else {
 
-        barra.style.display = 'none';
+        barra.style.display =
+            'none';
 
     }
 
 
-    document.getElementById('totalProductos')
-        .innerText = total;
+    document
+        .getElementById(
+            'totalProductos'
+        )
+        .innerText =
+            total;
 
 
-    document.getElementById('totalPedidos')
-        .innerText = totalPedidos;
+    document
+        .getElementById(
+            'totalPedidos'
+        )
+        .innerText =
+            totalPedidos;
+}
 
+
+// ============================================================
+// PREPARAR INPUTS DE PEDIDOS
+// ============================================================
+
+function prepararInputsPedidos()
+{
+    let contenedor =
+        document.getElementById(
+            'inputsPedidos'
+        );
+
+
+    contenedor.innerHTML =
+        '';
+
+
+    let pedidos =
+        Object.values(pedidosAPI);
+
+
+    pedidos.forEach(function(pedido)
+    {
+
+        /*
+         * Por ahora guardamos los datos básicos del pedido.
+         *
+         * En el siguiente paso modificaremos
+         * DespachoController::store() para procesarlos
+         * correctamente.
+         */
+
+        let numero =
+            document.createElement('input');
+
+        numero.type =
+            'hidden';
+
+        numero.name =
+            'pedidos_excel[' +
+            escapeInputName(
+                pedido.numero_pedido
+            ) +
+            '][numero_pedido]';
+
+        numero.value =
+            pedido.numero_pedido || '';
+
+        contenedor.appendChild(
+            numero
+        );
+
+
+        let cliente =
+            document.createElement('input');
+
+        cliente.type =
+            'hidden';
+
+        cliente.name =
+            'pedidos_excel[' +
+            escapeInputName(
+                pedido.numero_pedido
+            ) +
+            '][cliente]';
+
+        cliente.value =
+            pedido.cliente || '';
+
+        contenedor.appendChild(
+            cliente
+        );
+
+
+        let tipo =
+            document.createElement('input');
+
+        tipo.type =
+            'hidden';
+
+        tipo.name =
+            'pedidos_excel[' +
+            escapeInputName(
+                pedido.numero_pedido
+            ) +
+            '][tipo_entrega]';
+
+        tipo.value =
+            pedido.tipo_entrega || 'RECOGERA';
+
+        contenedor.appendChild(
+            tipo
+        );
+    });
+}
+
+
+// ============================================================
+// ESCAPAR NOMBRE DE INPUT
+// ============================================================
+
+function escapeInputName(valor)
+{
+    return String(valor)
+        .replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
 
@@ -1164,7 +1647,9 @@ document
 
 
                 document
-                    .querySelectorAll('.categoria-btn')
+                    .querySelectorAll(
+                        '.categoria-btn'
+                    )
                     .forEach(function(btn)
                     {
 
@@ -1188,7 +1673,9 @@ document
                 );
 
 
-                filtrarProductos(categoria);
+                filtrarProductos(
+                    categoria
+                );
 
             }
         );
@@ -1202,12 +1689,14 @@ document
 
 function filtrarProductos(categoria)
 {
-
-    let visibles = 0;
+    let visibles =
+        0;
 
 
     document
-        .querySelectorAll('.producto-card')
+        .querySelectorAll(
+            '.producto-card'
+        )
         .forEach(function(card)
         {
 
@@ -1221,7 +1710,8 @@ function filtrarProductos(categoria)
             )
             {
 
-                card.style.display = '';
+                card.style.display =
+                    '';
 
                 visibles++;
 
@@ -1229,7 +1719,8 @@ function filtrarProductos(categoria)
             else
             {
 
-                card.style.display = 'none';
+                card.style.display =
+                    'none';
 
             }
 
@@ -1237,12 +1728,13 @@ function filtrarProductos(categoria)
 
 
     document
-        .getElementById('sinResultados')
+        .getElementById(
+            'sinResultados'
+        )
         .style.display =
             visibles === 0
                 ? 'block'
                 : 'none';
-
 }
 
 
@@ -1251,7 +1743,9 @@ function filtrarProductos(categoria)
 // ============================================================
 
 document
-    .getElementById('buscarProducto')
+    .getElementById(
+        'buscarProducto'
+    )
     .addEventListener(
         'input',
         function()
@@ -1263,11 +1757,14 @@ document
                     .trim();
 
 
-            let visibles = 0;
+            let visibles =
+                0;
 
 
             document
-                .querySelectorAll('.producto-card')
+                .querySelectorAll(
+                    '.producto-card'
+                )
                 .forEach(function(card)
                 {
 
@@ -1281,7 +1778,8 @@ document
                     )
                     {
 
-                        card.style.display = '';
+                        card.style.display =
+                            '';
 
                         visibles++;
 
@@ -1289,7 +1787,8 @@ document
                     else
                     {
 
-                        card.style.display = 'none';
+                        card.style.display =
+                            'none';
 
                     }
 
@@ -1297,68 +1796,9 @@ document
 
 
             document
-                .getElementById('sinResultados')
-                .style.display =
-                    visibles === 0
-                        ? 'block'
-                        : 'none';
-
-        }
-    );
-
-
-// ============================================================
-// BUSCADOR PEDIDOS
-// ============================================================
-
-document
-    .getElementById('buscarPedido')
-    .addEventListener(
-        'input',
-        function()
-        {
-
-            let texto =
-                this.value
-                    .toLowerCase()
-                    .trim();
-
-
-            let visibles = 0;
-
-
-            document
-                .querySelectorAll('.pedido-item')
-                .forEach(function(item)
-                {
-
-                    let numero =
-                        item.dataset.numero;
-
-
-                    if (
-                        texto === '' ||
-                        numero.includes(texto)
-                    )
-                    {
-
-                        item.style.display = '';
-
-                        visibles++;
-
-                    }
-                    else
-                    {
-
-                        item.style.display = 'none';
-
-                    }
-
-                });
-
-
-            document
-                .getElementById('sinPedidos')
+                .getElementById(
+                    'sinResultados'
+                )
                 .style.display =
                     visibles === 0
                         ? 'block'
@@ -1373,40 +1813,56 @@ document
 // ============================================================
 
 document
-    .getElementById('chofer_id_principal')
+    .getElementById(
+        'chofer_id_principal'
+    )
     .addEventListener(
         'change',
         function()
         {
 
             document
-                .getElementById('chofer_id')
-                .value = this.value;
+                .getElementById(
+                    'chofer_id'
+                )
+                .value =
+                    this.value;
 
 
             document
-                .getElementById('chofer_id_barra')
-                .value = this.value;
+                .getElementById(
+                    'chofer_id_barra'
+                )
+                .value =
+                    this.value;
 
         }
     );
 
 
 document
-    .getElementById('chofer_id_barra')
+    .getElementById(
+        'chofer_id_barra'
+    )
     .addEventListener(
         'change',
         function()
         {
 
             document
-                .getElementById('chofer_id')
-                .value = this.value;
+                .getElementById(
+                    'chofer_id'
+                )
+                .value =
+                    this.value;
 
 
             document
-                .getElementById('chofer_id_principal')
-                .value = this.value;
+                .getElementById(
+                    'chofer_id_principal'
+                )
+                .value =
+                    this.value;
 
         }
     );
@@ -1418,10 +1874,11 @@ document
 
 function enviarDespacho()
 {
-
     let chofer =
         document
-            .getElementById('chofer_id_principal')
+            .getElementById(
+                'chofer_id_principal'
+            )
             .value;
 
 
@@ -1438,23 +1895,29 @@ function enviarDespacho()
 
 
     document
-        .getElementById('chofer_id')
-        .value = chofer;
+        .getElementById(
+            'chofer_id'
+        )
+        .value =
+            chofer;
 
 
     let hayProductos =
         Object.values(cantidades)
             .some(
                 producto =>
-                    producto.cantidad > 0
+                    Number(producto.cantidad) > 0
             );
 
 
     let hayPedidos =
-        Object.keys(pedidosSeleccionados).length > 0;
+        Object.keys(pedidosAPI).length > 0;
 
 
-    if (!hayProductos && !hayPedidos)
+    if (
+        !hayProductos &&
+        !hayPedidos
+    )
     {
 
         alert(
@@ -1467,21 +1930,19 @@ function enviarDespacho()
 
 
     // ========================================================
-    // LIMPIAR INPUTS ANTERIORES
+    // LIMPIAR INPUTS PRODUCTOS
     // ========================================================
 
     document
-        .getElementById('inputsProductos')
-        .innerHTML = '';
-
-
-    document
-        .getElementById('inputsPedidos')
-        .innerHTML = '';
+        .getElementById(
+            'inputsProductos'
+        )
+        .innerHTML =
+            '';
 
 
     // ========================================================
-    // CREAR INPUTS DE PRODUCTOS
+    // CREAR INPUTS PRODUCTOS
     // ========================================================
 
     Object.keys(cantidades)
@@ -1489,21 +1950,28 @@ function enviarDespacho()
         {
 
             let cantidad =
-                cantidades[id].cantidad;
+                Number(
+                    cantidades[id].cantidad
+                );
 
 
             if (cantidad > 0)
             {
 
                 let input =
-                    document.createElement('input');
+                    document.createElement(
+                        'input'
+                    );
 
 
-                input.type = 'hidden';
+                input.type =
+                    'hidden';
 
 
                 input.name =
-                    'productos[' + id + ']';
+                    'productos[' +
+                    id +
+                    ']';
 
 
                 input.value =
@@ -1511,64 +1979,82 @@ function enviarDespacho()
 
 
                 document
-                    .getElementById('inputsProductos')
-                    .appendChild(input);
+                    .getElementById(
+                        'inputsProductos'
+                    )
+                    .appendChild(
+                        input
+                    );
 
             }
 
         });
 
 
-    // ========================================================
-    // CREAR INPUTS DE PEDIDOS
-    // ========================================================
+    /*
+     * Los pedidos de la API ya fueron preparados
+     * en prepararInputsPedidos().
+     *
+     * Aún NO cambiamos el nombre a pedidos[],
+     * porque el DespachoController todavía necesita
+     * ser adaptado para recibir estos pedidos correctamente.
+     */
 
-    Object.keys(pedidosSeleccionados)
-        .forEach(function(id)
-        {
-
-            let input =
-                document.createElement('input');
-
-
-            input.type = 'hidden';
-
-
-            input.name =
-                'pedidos[]';
-
-
-            input.value =
-                id;
-
-
-            document
-                .getElementById('inputsPedidos')
-                .appendChild(input);
-
-        });
-
-
-    // ========================================================
-    // CONFIRMAR
-    // ========================================================
 
     let mensaje =
-        '¿Estás segura de que deseas despachar estos productos y pedidos a la tienda?';
+        hayPedidos
+            ? '¿Estás segura de que deseas enviar estos pedidos RECOGERA y productos a tienda?'
+            : '¿Estás segura de que deseas despachar estos productos a la tienda?';
 
 
-    if (confirm(mensaje))
+    if (
+        confirm(mensaje)
+    )
     {
 
         document
-            .getElementById('formDespacho')
+            .getElementById(
+                'formDespacho'
+            )
             .submit();
 
     }
 
 }
 
+
+// ============================================================
+// ESCAPAR HTML
+// ============================================================
+
+function escapeHtml(text)
+{
+    let div =
+        document.createElement(
+            'div'
+        );
+
+    div.innerText =
+        text ?? '';
+
+    return div.innerHTML;
+}
+
+
+// ============================================================
+// FORMATEAR NOMBRE DE CAMPO
+// ============================================================
+
+function formatearCampo(campo)
+{
+    return String(campo)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, function(letra)
+        {
+            return letra.toUpperCase();
+        });
+}
+
 </script>
 
 @stop
-```

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pedido;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Services\PedidoExcelService;
 
 class PedidoController extends Controller
 {
@@ -45,5 +46,94 @@ class PedidoController extends Controller
         $pedido = Pedido::create($datos);
 
         return response()->json(['data' => $pedido->load('producto')], 201);
+    }
+        /**
+     * Buscar un pedido RECOGERA por número.
+     */
+public function buscarRecogera(
+    string $numero,
+    PedidoExcelService $excel
+): JsonResponse {
+
+    $pedidos = $excel->recogeraDeHoy($numero);
+
+    if (empty($pedidos)) {
+        return response()->json([
+            'message' => 'No se encontró un pedido RECOGERA con ese número para hoy.'
+        ], 404);
+    }
+
+    return response()->json([
+        'data' => $pedidos[0]
+    ]);
+}
+
+    /**
+     * Enviar pedido a tienda.
+     */
+    public function enviarATienda(Pedido $pedido): JsonResponse
+    {
+        if (strtoupper($pedido->tipo_entrega) !== 'RECOGERA') {
+            return response()->json([
+                'message' => 'El pedido no es RECOGERA.'
+            ], 422);
+        }
+
+        if ($pedido->estado === 'ENVIADO') {
+            return response()->json([
+                'message' => 'El pedido ya fue enviado a tienda.'
+            ], 422);
+        }
+
+        $pedido->update([
+            'estado' => 'ENVIADO'
+        ]);
+
+        return response()->json([
+            'message' => 'Pedido enviado a tienda correctamente.',
+            'data' => $pedido->fresh()->load('producto')
+        ]);
+    }
+
+
+    /**
+     * Lista de pedidos enviados a tienda.
+     */
+    public function pedidosTienda(): JsonResponse
+    {
+        $pedidos = Pedido::with([
+            'producto',
+            'despacho.chofer'
+        ])
+            ->where('estado', 'ENVIADO')
+            ->whereRaw('UPPER(tipo_entrega) = ?', ['RECOGERA'])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'data' => $pedidos
+        ]);
+    }
+
+
+    /**
+     * Confirmar recepción del pedido en tienda.
+     */
+    public function recibir(Pedido $pedido): JsonResponse
+    {
+        if ($pedido->estado !== 'ENVIADO') {
+            return response()->json([
+                'message' => 'El pedido no está pendiente de recepción.'
+            ], 422);
+        }
+
+        $pedido->update([
+            'estado' => 'RECIBIDO'
+        ]);
+
+        return response()->json([
+            'message' => 'Pedido recibido correctamente en tienda.',
+            'data' => $pedido->fresh()->load('producto')
+        ]);
     }
 }
